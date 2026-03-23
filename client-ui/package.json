@@ -1,0 +1,19 @@
+{
+  "name": "webrtc-remote-desktop-client",
+  "private": true,
+  "version": "0.0.0",
+  "main": "main.electron.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5100 --host 127.0.0.1 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron": "wait-on http-get://localhost:8080/ && electron .",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^29.1.5",
+    "vite": "^6.2.0",
+    "wait-on": "^7.2.0"
+  }
+}

@@ -1,0 +1,24 @@
+[package]
+name = "capture_motor_native"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# GStreamer bindings for Rust
+gstreamer = "0.23"
+gstreamer-webrtc = "0.23"
+gstreamer-sdp = "0.23"
+glib = "0.20"
+
+# Async runtime and tools
+tokio = { version = "1.0", features = ["full"] }
+futures = "0.3"
+
+# WebSockets for Node.js Signaling Server
+tokio-tungstenite = "0.26"
+url = "2.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Note: Building this requires installing GStreamer MSVC binaries on Windows
+# and setting the GTK/GStreamer environment variables.

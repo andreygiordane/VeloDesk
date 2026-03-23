@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>VeloDesk</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+          --bg-dark: #0f0817;
+          --bg-card: rgba(30, 15, 50, 0.4);
+          --vel-purple: #9220b9;
+          --vel-purple-light: #b53dd2;
+          --vel-red: #ff3b3b;
+          --text-muted: #aaa;
+          --border-glow: rgba(181, 61, 210, 0.3);
+      }
+      body {
+          margin: 0; padding: 0; font-family: 'Inter', sans-serif;
+          background: var(--bg-dark); color: white;
+          height: 100vh; overflow: hidden;
+      }
+      
+      /* Canvas Background */
+      #bgCanvas {
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          z-index: 1; pointer-events: none;
+      }
+
+      /* Header */
+      .header {
+          position: relative; z-index: 10;
+          display: flex; justify-content: center; align-items: center;
+          padding: 15px 30px;
+      }
+      .header-center {
+          display: flex; align-items: center; gap: 25px;
+      }
+      .logo { display: flex; align-items: center; }
+      .logo img { height: 150px; object-fit: contain; filter: drop-shadow(0 0 15px rgba(200,200,255,0.4));}
+      
+      .address-bar {
+          display: flex; align-items: center;
+          background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.05);
+          backdrop-filter: blur(15px);
+          border-radius: 30px; padding: 4px; width: 450px;
+      }
+      .address-bar input {
+          flex: 1; background: transparent; border: none; color: #fff;
+          padding: 10px 20px; outline: none; font-size: 14px;
+      }
+      .btn-connect {
+          background: var(--vel-purple-light); color: white; border: none;
+          padding: 8px 25px; border-radius: 25px; cursor: pointer;
+          font-weight: 600; transition: 0.3s;
+      }
+      .btn-connect:hover { filter: brightness(1.2); box-shadow: 0 0 15px var(--vel-purple-light); }
+      
+      .gear-btn { position: absolute; right: 30px; background:transparent; border:none; color:#ddd; cursor:pointer; opacity: 0.7; transition: 0.3s;}
+      .gear-btn:hover { opacity: 1; transform: rotate(45deg); }
+      
+      .file-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 15px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; transition: 0.3s; }
+      .file-btn:hover { background: var(--vel-purple); border-color: var(--vel-purple-light); }
+
+      /* Dashboard */
+      .dashboard {
+          position: relative; z-index: 10;
+          display: flex; flex-direction: column; align-items: center;
+          height: calc(100vh - 100px);
+          overflow-y: auto;
+          margin-top: 20px;
+          padding-bottom: 50px;
+          scrollbar-width: thin;
+          scrollbar-color: var(--vel-purple) transparent;
+      }
+      .dashboard::-webkit-scrollbar { width: 6px; }
+      .dashboard::-webkit-scrollbar-thumb { background: var(--vel-purple); border-radius: 10px; }
+      .dashboard h2 { font-weight: 400; font-size: 24px; margin: 0 0 5px 0; color: #ccc; }
+      .alias { font-size: 32px; font-weight: bold; color: var(--vel-purple-light); margin-bottom: 20px; }
+      
+      .id-wrapper { position: relative; margin-bottom: 70px; }
+      .id-box {
+          background: var(--bg-card); backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px; padding: 15px 60px;
+          font-size: 42px; font-weight: 700; letter-spacing: 4px;
+          box-shadow: 0 0 50px var(--border-glow);
+          text-shadow: 0 0 10px rgba(181, 61, 210, 0.5);
+      }
+      
+      .connections {
+          position: absolute; top: 120%; left: 50%; transform: translateX(-50%);
+          width: 620px; height: 60px; pointer-events: none; opacity: 0.3;
+      }
+
+      .cards { display: flex; gap: 25px; width: 100%; max-width: 950px; }
+      .card {
+          flex: 1; height: 160px; background: var(--bg-card);
+          backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 14px; padding: 22px; display: flex; flex-direction: column;
+      }
+      .card.highlight {
+          background: linear-gradient(135deg, rgba(146, 32, 185, 0.4), rgba(30, 10, 50, 0.4));
+          border-color: rgba(181, 61, 210, 0.3);
+      }
+      .card-top { display: flex; justify-content: space-between; margin-bottom: 20px; }
+      .card-info h3 { margin: 0 0 8px 0; font-size: 17px; font-weight: 600; }
+      .card-info p { margin: 0; font-size: 12px; color: #bbb; line-height: 1.5; }
+      .dot { width:12px; height:12px; background:#4ffb9b; border-radius:50%; box-shadow: 0 0 12px #4ffb9b; }
+
+      /* Professional Settings Modal */
+      .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px);}
+      
+      .settings-container {
+          background: #161122; width: 850px; height: 550px;
+          border-radius: 12px; display: flex; overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.1);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+      }
+      
+      .settings-sidebar {
+          width: 220px; background: #0d0915; padding: 20px 0;
+          border-right: 1px solid rgba(255,255,255,0.05);
+      }
+      .settings-sidebar h2 { padding: 0 25px 20px 25px; font-size: 18px; color: var(--vel-red); margin: 0; }
+      .sidebar-item {
+          padding: 12px 25px; cursor: pointer; transition: 0.2s;
+          display: flex; align-items: center; gap: 12px; color: #999; font-size: 14px;
+      }
+      .sidebar-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+      .sidebar-item.active {
+          background: rgba(255,59,59,0.1); color: var(--vel-red);
+          border-left: 3px solid var(--vel-red);
+      }
+
+      .settings-content { flex: 1; padding: 40px; overflow-y: auto; }
+      .settings-section { display: none; }
+      .settings-section.active { display: block; }
+      .settings-section h3 { margin-top: 0; font-size: 22px; margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;}
+      
+      .form-group { margin-bottom: 25px; }
+      .form-group label { display: block; margin-bottom: 10px; color: #ccc; font-size: 14px; }
+      .form-group input[type="text"], .form-group input[type="password"], .form-group select {
+          width: 100%; padding: 12px; background: #0d0915; border: 1px solid #333;
+          border-radius: 6px; color: white; outline: none; box-sizing: border-box;
+      }
+      .form-group input:focus { border-color: var(--vel-purple); }
+      
+      .checkbox-group { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; color: #bbb; font-size: 13px; }
+      .checkbox-group input { width: 16px; height: 16px; accent-color: var(--vel-red); }
+
+      .btn-save:hover { filter: brightness(1.2); }
+      
+      /* Recent Connections */
+      .recent-section { margin-top: 40px; text-align: left; width: 100%; max-width: 900px;}
+      .recent-section h3 { font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; padding-left: 5px; }
+      .recent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; margin-bottom: 40px; }
+      .recent-card {
+          background: #1e1633; border: 1px solid rgba(181, 61, 210, 0.2);
+          padding: 18px; border-radius: 12px; cursor: pointer; transition: 0.3s;
+          display: flex; align-items: center; gap: 12px; position: relative; overflow: hidden;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      }
+      .recent-card:hover { background: #2a1e45; border-color: var(--vel-purple); transform: translateY(-4px); box-shadow: 0 8px 25px rgba(181, 61, 210, 0.2); }
+      .recent-card .icon { 
+          width: 32px; height: 32px; background: #1a0f2e; border-radius: 8px; 
+          display: flex; align-items: center; justify-content: center; color: var(--vel-purple);
+      }
+      .recent-card .info { flex: 1; }
+      .recent-card .info .name { font-size: 13px; font-weight: 600; color: #eee; margin-bottom: 2px; }
+      .recent-card .info .id { font-size: 11px; color: #777; font-family: monospace; }
+      .recent-card .btn-remove { 
+          position: absolute; top: 5px; right: 5px; color: #444; opacity: 0; transition: 0.2s;
+          background: none; border: none; cursor: pointer; padding: 5px;
+      }
+      .recent-card:hover .btn-remove { opacity: 1; }
+      .recent-card .btn-remove:hover { color: var(--vel-red); }
+
+      /* Request/Alert Modals (Compact) */
+      .compact-modal { background: #1a0f2e; padding: 30px; border-radius: 12px; width: 330px; border: 1px solid var(--vel-purple); box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+
+      #video-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 500; }
+      #remoteVideo { width: 100%; height: 100%; object-fit: contain; }
+      #status-overlay { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 4px; z-index: 600;}
+      
+      #debugLog { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: #f00; font-family: monospace; font-size: 10px; z-index: 10000; max-height: 100px; overflow: auto; pointer-events: none; }
+    </style>
+  </head>
+  <body>
+    <div id="debugLog"></div>
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="header">
+      <div class="header-center">
+        <div class="logo"><img src="/velodesk.png" alt="VeloDesk"></div>
+        <div class="address-bar">
+          <input type="text" id="targetIdInput" placeholder="Digite o ID remoto para Conectar">
+          <button class="btn-connect" id="connectBtn">Conectar</button>
+        </div>
+      </div>
+      <div style="position: absolute; right: 30px; display: flex; align-items: center; gap: 15px;">
+        <button class="file-btn" id="transferFileBtn" style="display: none;">
+          <svg viewBox="0 0 24 24" width="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+          Enviar Arquivo
+        </button>
+        <button class="gear-btn" id="openSettingsBtn" title="Configurações">
+          <svg viewBox="0 0 24 24" width="28" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+      <h2>Seu ID VeloDesk:</h2>
+      <div class="alias" id="clientAlias">Este Dispositivo</div>
+      
+      <div class="id-wrapper">
+          <div class="id-box" id="localDeviceId">--- --- ---</div>
+          <div class="connections">
+              <svg viewBox="0 0 620 60" preserveAspectRatio="none">
+                  <path d="M 310 0 L 310 25 L 110 25 L 110 60" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"></path>
+                  <path d="M 310 0 L 310 60" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"></path>
+                  <path d="M 310 0 L 310 25 L 510 25 L 510 60" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"></path>
+              </svg>
+          </div>
+      </div>
+
+      <div class="dash-content" style="display:flex; flex-direction:column; align-items:center; width:100%">
+        <div class="recent-section" id="recentSection" style="display: none;">
+          <h3>Conexões Recentes</h3>
+          <div class="recent-grid" id="recentGrid">
+              <!-- Cards will be injected here -->
+          </div>
+        </div>
+
+        <div class="cards">
+        <div class="card">
+          <div class="card-top">
+            <svg width="22" viewBox="0 0 24 24" fill="var(--vel-red)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+            <svg width="20" viewBox="0 0 24 24" fill="#666"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+          </div>
+          <div class="card-info">
+            <h3>Acesso Seguro</h3>
+            <p>Sua máquina está protegida. Acesso externo requer sua aprovação ou senha mestre.</p>
+          </div>
+        </div>
+        
+        <div class="card highlight">
+          <div class="card-top">
+            <div class="dot"></div>
+            <svg width="24" viewBox="0 0 24 24" fill="#aaa"><path d="M4 11h16v2H4zm0-5h16v2H4zm0 10h16v2H4z"/></svg>
+          </div>
+          <div class="card-info">
+            <h3>Rede VeloDesk</h3>
+            <p>Servidor Operacional.<br>Conexão P2P Criptografada Ativa.</p>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-top">
+            <svg width="22" viewBox="0 0 24 24" fill="#aaa"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5h-2v-4h2v4zm-3.5-3.5l1.41-1.41L9.5 10.1l-1.41 1.41 2.82 2.82zm7.09 0l-1.41-1.41 1.41-1.41 1.41 1.41-1.41 1.41zM11 5h2v4h-2V5z"/></svg>
+            <svg width="22" viewBox="0 0 24 24" fill="#aaa"><path d="M21 16.5C21 16.88 20.79 17.21 20.47 17.38L12.57 21.82C12.41 21.94 12.21 22 12 22C11.79 22 11.59 21.94 11.43 21.82L3.53 17.38C3.21 17.21 3 16.88 3 16.5V7.5C3 7.12 3.21 6.79 3.53 6.62L11.43 2.18C11.59 2.06 11.79 2 12 2C12.21 2 12.41 2.06 12.57 2.18L20.47 6.62C20.79 6.79 21 7.12 21 7.5V16.5Z"/></svg>
+          </div>
+          <div class="card-info">
+            <h3>Hardware</h3>
+            <p>DXGI Video Stream Out.<br>Aceleração H.264 (NVENC/VCE).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Professional Settings Modal -->
+    <div class="modal" id="settingsModal">
+      <div class="settings-container">
+        <div class="settings-sidebar">
+          <h2>Configurações</h2>
+          <div class="sidebar-item active" data-tab="tab-security">Segurança (Acesso)</div>
+          <div class="sidebar-item" data-tab="tab-connection">Conexão & Rede</div>
+          <div class="sidebar-item" data-tab="tab-display">Exibição & Qualidade</div>
+          <div class="sidebar-item" data-tab="tab-about">Sobre o VeloDesk</div>
+        </div>
+        <div class="settings-content">
+            <!-- TAB: SEGURANÇA -->
+            <div class="settings-section active" id="tab-security">
+              <h3>Acesso não Supervisionado</h3>
+              <div class="form-group">
+                <label>Senha Permanente (Mestra):</label>
+                <input type="password" id="settingsPassInput" placeholder="Digite a nova senha">
+              </div>
+              <div class="checkbox-group">
+                <input type="checkbox" id="allowSaveData" checked>
+                <label>Permitir que outros usuários salvem dados de acesso</label>
+              </div>
+              <div class="checkbox-group">
+                <input type="checkbox" checked>
+                <label>Transmitir teclas de atalho (Alt+Tab, etc)</label>
+              </div>
+            </div>
+
+            <!-- TAB: CONEXÃO -->
+            <div class="settings-section" id="tab-connection">
+              <h3>Rede e Proxy</h3>
+              <div class="form-group">
+                <label>Servidor de Sinalização (URL):</label>
+                <input type="text" id="signalingUrlInput" placeholder="http://localhost:3000">
+              </div>
+              <div class="form-group">
+                <label>Porta Local (Somente Host):</label>
+                <input type="text" value="7070" disabled>
+              </div>
+              <div class="checkbox-group">
+                <input type="checkbox" id="directConn" checked>
+                <label>Permitir conexões diretas (P2P)</label>
+              </div>
+            </div>
+
+            <!-- TAB: QUALIDADE -->
+            <div class="settings-section" id="tab-display">
+              <h3>Qualidade de Imagem</h3>
+              <div class="form-group">
+                <label>Modo de Otimização:</label>
+                <select id="qualitySelect">
+                    <option value="balanced" selected>Equilibrado (Recomendado)</option>
+                    <option value="quality">Melhor Qualidade de Vídeo</option>
+                    <option value="fast">Menor tempo de Reação (Veloz)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Aceleração por Hardware:</label>
+                <select>
+                    <option>Direct3D (Recomendado)</option>
+                    <option>OpenGL (Experimental)</option>
+                </select>
+              </div>
+            </div>
+
+            <button class="btn-save" id="saveSettingsBtn">Aplicar Mudanças</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert Modals -->
+    <div class="modal" id="passModal">
+      <div class="compact-modal">
+        <h3>Autenticação</h3><p id="authErr" style="color:var(--vel-red);font-size:12px;"></p>
+        <input type="password" id="passInput" style="width:100%;padding:10px;margin:15px 0;background:#000;border:1px solid #444;color:#fff" placeholder="Senha mestre">
+        <button class="btn-save" id="submitPassBtn" style="width:100%;margin:0">Acessar Remotamente</button>
+        <button class="btn-save" style="background:#444;width:100%;margin-top:10px" id="closePassModal">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="modal" id="requestModal">
+    <div class="compact-modal" style="border-color:var(--vel-red)">
+      <h3 style="color:var(--vel-red)">Solicitação de Acesso</h3>
+      <p>Um dispositivo externo está tentando visualizar e controlar sua máquina agora.</p>
+      <button class="btn-save" id="acceptBtn" style="width:100%;margin:0;background:#2e7d32">Aceitar Acesso</button>
+      <button class="btn-save" id="rejectBtn" style="background:var(--vel-red);width:100%;margin-top:10px">Rejeitar</button>
+    </div>
+  </div>
+
+  <!-- File Selection (Hidden) -->
+  <input type="file" id="fileInput" style="display: none;">
+
+  <!-- Progress Modal -->
+  <div class="modal" id="progressModal">
+    <div class="compact-modal">
+        <h3>Transferência</h3>
+        <p id="progressFileName">Arquivo.zip</p>
+        <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 15px 0; overflow: hidden;">
+            <div id="progressBar" style="width: 0%; height: 100%; background: var(--vel-purple-light); transition: 0.2s;"></div>
+        </div>
+        <p id="progressText" style="font-size: 12px; color: var(--text-muted); text-align: center;">0% enviando...</p>
+    </div>
+  </div>
+
+    <!-- Video Stream -->
+    <div id="video-container">
+      <div id="status-overlay">Conectado: <span id="status">...</span></div>
+      <video id="remoteVideo" autoplay playsinline muted></video>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>

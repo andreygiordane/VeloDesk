@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: velodesk-signaling
+    runtime: node
+    rootDir: signaling-server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: 10000
