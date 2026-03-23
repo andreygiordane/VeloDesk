@@ -1,6 +1,7 @@
 services:
   - type: web
     name: velodesk-signaling
+    plan: free
     runtime: node
     rootDir: signaling-server
     buildCommand: npm install
