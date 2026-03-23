@@ -23,10 +23,23 @@ function createWindow() {
 }
 
 function startPythonMotor() {
-    const pythonPath = path.join(__dirname, '..', 'capture-motor', 'venv', 'Scripts', 'python.exe');
-    const scriptPath = path.join(__dirname, '..', 'capture-motor', 'main.py');
+    let pythonPath;
+    let scriptPath;
+    let args;
+
+    if (app.isPackaged) {
+        // Path in production (Extra Resources)
+        pythonPath = path.join(process.resourcesPath, 'velodesk-host.exe');
+        args = []; // It's already an executable
+    } else {
+        // Path in development
+        pythonPath = path.join(__dirname, '..', 'capture-motor', 'venv', 'Scripts', 'python.exe');
+        scriptPath = path.join(__dirname, '..', 'capture-motor', 'main.py');
+        args = [scriptPath];
+    }
     
-    pythonProcess = spawn(pythonPath, [scriptPath]);
+    console.log(`[MAIN] Iniciando motor: ${pythonPath}`);
+    pythonProcess = spawn(pythonPath, args);
     
     pythonProcess.stdout.on('data', (data) => {
         const output = data.toString();

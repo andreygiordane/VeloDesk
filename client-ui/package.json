@@ -1,18 +1,45 @@
 {
   "name": "webrtc-remote-desktop-client",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Solução de Acesso Remoto via WebRTC",
+  "author": "Andrey Costa",
   "main": "main.electron.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite --port 5100 --host 127.0.0.1 --strictPort",
     "build": "vite build",
     "preview": "vite preview",
-    "electron": "wait-on http-get://localhost:8080/ && electron .",
-    "start": "electron ."
+    "electron": "wait-on http-get://localhost:5100/ && electron .",
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.velodesk.remote",
+    "productName": "VeloDesk",
+    "directories": {
+      "output": "dist-installer"
+    },
+    "win": {
+      "target": ["nsis", "portable"],
+      "icon": "public/velodesk.png"
+    },
+    "extraResources": [
+      {
+        "from": "resources/velodesk-host.exe",
+        "to": "velodesk-host.exe"
+      }
+    ],
+    "files": [
+      "dist/**/*",
+      "main.electron.js",
+      "preload.js",
+      "package.json"
+    ]
   },
   "devDependencies": {
     "electron": "^29.1.5",
+    "electron-builder": "^24.13.3",
     "vite": "^6.2.0",
     "wait-on": "^7.2.0"
   }

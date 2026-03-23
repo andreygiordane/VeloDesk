@@ -19,15 +19,28 @@ function createWindow() {
         }
     });
 
-    mainWindow.loadURL('http://127.0.0.1:5100');
+    if (app.isPackaged) {
+        mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+    } else {
+        mainWindow.loadURL('http://127.0.0.1:5100');
+    }
     mainWindow.setMenuBarVisibility(false);
 }
 
 function startPythonMotor() {
-    const pythonPath = path.join(__dirname, '..', 'capture-motor', 'venv', 'Scripts', 'python.exe');
-    const scriptPath = path.join(__dirname, '..', 'capture-motor', 'main.py');
+    let pythonPath;
+    let args;
+
+    if (app.isPackaged) {
+        pythonPath = path.join(process.resourcesPath, 'velodesk-host.exe');
+        args = [];
+    } else {
+        pythonPath = path.join(__dirname, '..', 'capture-motor', 'venv', 'Scripts', 'python.exe');
+        const scriptPath = path.join(__dirname, '..', 'capture-motor', 'main.py');
+        args = [scriptPath];
+    }
     
-    pythonProcess = spawn(pythonPath, [scriptPath]);
+    pythonProcess = spawn(pythonPath, args);
     
     pythonProcess.stdout.on('data', (data) => {
         const output = data.toString();
@@ -78,9 +91,10 @@ ipcMain.on('open-viewer', (e, data) => {
         }
     });
 
-    // In DEV, we use the Vite dev server URL but pointing to viewer.html
-    // Or we can just use the file path if it's simpler
-    const viewerUrl = `http://127.0.0.1:5100/viewer.html?id=${remoteId}&pass=${password}`;
+    const viewerUrl = app.isPackaged 
+        ? `file://${path.join(__dirname, 'dist', 'viewer.html')}?id=${remoteId}&pass=${password}`
+        : `http://127.0.0.1:5100/viewer.html?id=${remoteId}&pass=${password}`;
+    
     viewerWindow.loadURL(viewerUrl);
     viewerWindow.setMenuBarVisibility(false);
 });
