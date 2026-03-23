@@ -22,7 +22,7 @@ pyautogui.FAILSAFE = False
 pyautogui.PAUSE = 0
 logging.basicConfig(level=logging.ERROR)
 
-SIGNALING_SERVER_URL = os.getenv("VELODESK_SIGNALING_URL", "http://localhost:3000")
+SIGNALING_SERVER_URL = os.getenv("VELODESK_SIGNALING_URL", "https://velodesk-signaling.onrender.com")
 CONFIG_FILE = "velodesk_config.json"
 
 # WebRTC Config (Match Client)

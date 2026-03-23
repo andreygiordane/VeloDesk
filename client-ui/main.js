@@ -154,7 +154,7 @@ saveSettingsBtn.onclick = () => {
 };
 
 // Initialize Settings
-signalingUrlInput.value = localStorage.getItem('velodesk-signaling-url') || 'http://localhost:3000';
+signalingUrlInput.value = localStorage.getItem('velodesk-signaling-url') || 'https://velodesk-signaling.onrender.com';
 
 // --- NAVIGATION & CONNECTION ---
 connectBtn.onclick = () => {

@@ -20,7 +20,7 @@ function log(msg) {
 
 targetName.innerText = `ID: ${remoteId}`;
 
-const signalingUrl = localStorage.getItem('velodesk-signaling-url') || 'http://localhost:3000';
+const signalingUrl = localStorage.getItem('velodesk-signaling-url') || 'https://velodesk-signaling.onrender.com';
 const socket = io(signalingUrl);
 let pc = null;
 let dataChannel = null;
