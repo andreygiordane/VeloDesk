@@ -32,6 +32,8 @@
     ],
     "files": [
       "dist/**/*",
+      "main.electron.cjs",
+      "preload.cjs",
       "main.electron.js",
       "preload.js",
       "package.json"
