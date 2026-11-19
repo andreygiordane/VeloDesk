@@ -308,9 +308,9 @@ Encontrou uma falha de segurança? Abra um *security advisory* privado na aba **
 
 | Plataforma | Controlar outros | Ser controlado | Observações |
 |---|:-:|:-:|---|
-| Windows 10/11 | ✅ | ✅ | NTLM do Windows no proxy, impressão remota, túneis, tudo acima |
-| Linux (X11) | ✅ | ✅ | **Wayland não é suportado** para ser controlado |
-| macOS | ✅ | ❌ ainda | Falta o injetor de teclado e mouse; app não assinado |
+| Windows 10/11 | sim | sim | NTLM do Windows no proxy, impressão remota, túneis, tudo acima |
+| Linux (X11) | sim | sim | **Wayland não é suportado** para ser controlado |
+| macOS | sim | ainda não | Falta o injetor de teclado e mouse; app não assinado |
 
 Outras limitações conhecidas:
 
