@@ -50,11 +50,12 @@ Não há conta, nuvem de terceiros nem telemetria. Você sobe o servidor onde qu
 
 | Área | O que tem |
 |---|---|
-| **Controle remoto** | Tela, mouse e teclado com baixa latência, 60 quadros por segundo, qualidade que já começa alta, só o cursor do computador remoto |
+| **Controle remoto** | Tela, mouse e teclado com baixa latência, 60 quadros por segundo, qualidade que já começa alta, só o cursor do computador remoto, **escolha do monitor** quando o computador tem mais de um |
+| **Tela de sessão** | Janela com a barra de título do sistema, aba com o nome do computador, barra de ferramentas fixa (informações e permissões, monitor, arquivos, bate-papo, ações, tela cheia) e a tela remota logo abaixo, sem nada cobrindo |
 | **Quem é acessado** | Janela de aceite com permissões ajustáveis por pedido, marca d'água discreta no canto, janela da sessão compacta (não cobre a tela de quem controla) que expande com bate-papo, arquivos e permissões ao vivo, e botão **Desconectar** |
 | **Acesso sem supervisão** | Senha fixa forte, entrada sem confirmação, acesso salvo revogável, senhas de curto prazo para reconectar após reinício |
 | **Segurança** | Prova de senha por PBKDF2 + HMAC ligada à sessão DTLS, 2FA (TOTP), lista de IDs permitidos, bloqueio por tentativas, perfis de permissão |
-| **Arquivos e texto** | Envio e recebimento com aceite, gerenciador de arquivos remoto, área de transferência |
+| **Arquivos e texto** | Envio e recebimento com aceite, **gerenciador em dois painéis** (este dispositivo | remoto) com Upload e Baixar, área de transferência |
 | **Rede** | Descoberta de computadores na rede local, Wake-On-LAN, túneis TCP, proxy com autenticação (inclusive NTLM no Windows), STUN/TURN configuráveis |
 | **Outros** | Impressão remota, gravação de sessões, informações do sistema, reiniciar/bloquear/encerrar sessão (por permissão), miniaturas com o papel de parede de cada máquina |
 | **Distribuição** | Instaladores `.exe`, `.deb`, `.rpm`, AppImage e macOS (`.zip`), atualização automática com builds **assinados** |
@@ -75,6 +76,19 @@ Não há conta, nuvem de terceiros nem telemetria. Você sobe o servidor onde qu
     <td><img src="docs/img/settings-video.png" alt="Configurações de vídeo"><br><sub><b>Vídeo</b>: qualidade, quadros por segundo e limite de banda.</sub></td>
   </tr>
 </table>
+
+### Tela de sessão de quem controla
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/img/session-toolbar.png" alt="Barra de ferramentas da sessão e painel de informações"><br><sub><b>Barra fixa e informações</b>: perfil, versão, tempo, permissões liberadas e escolha de monitor. A tela remota fica abaixo da barra.</sub></td>
+    <td width="50%"><img src="docs/img/file-manager.png" alt="Gerenciador de arquivos em dois painéis"><br><sub><b>Gerenciador de arquivos</b>: este dispositivo à esquerda, o remoto à direita, com <b>Upload</b> e <b>Baixar</b>.</sub></td>
+  </tr>
+</table>
+
+> As imagens de sessão escondem o vídeo da tela remota e usam pastas e computadores fictícios.
+
+### No computador acessado
 
 Durante uma sessão, o computador acessado mostra uma marca discreta no canto da tela e uma **janela compacta** (nome, tempo e **Desconectar**) no canto inferior direito, para **não cobrir a tela de quem está controlando**. Ela expande sozinha quando chega uma mensagem ou um pedido de arquivo, ou pelo botão ⤢:
 
@@ -270,6 +284,7 @@ Outras limitações conhecidas:
 
 - O cursor do computador remoto vem dentro do vídeo (o Electron não permite capturar a tela sem ele), então há o atraso do vídeo ao mover o mouse. Uma captura nativa no núcleo é o próximo passo natural.
 - Sem TURN configurado, redes com NAT simétrico podem não conseguir o caminho direto.
+- A escolha de monitor foi testada no Windows com dois monitores; o apontamento do mouse para o monitor escolhido também existe para Linux (X11), mas ainda não foi testado em hardware com mais de um monitor.
 - Os pacotes Linux e macOS são gerados e inspecionados, mas os testes ponta a ponta automatizados rodam no Windows.
 
 ## Testes

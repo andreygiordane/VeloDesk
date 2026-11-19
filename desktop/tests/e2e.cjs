@@ -668,6 +668,77 @@ async function test(name, fn) { if (process.env.ONLY && !process.env.ONLY.split(
     await until(A, '!pc', 8000, 'host sem sessão'); await until(B, '!pc', 8000, 'controlador sem sessão');
   });
 
+  await test('T30 barra do sistema, barras fixas na sessão, informações e escolha de monitor', async () => {
+    log((await A.ev(`outerHeight-innerHeight`)) >= 30 && (await A.ev(`getComputedStyle(document.getElementById('wbar')).display`)) === 'none', 'T30a janela principal usa a barra de título do sistema (sem botões desenhados dentro do app)');
+    await sessionAs('padrao'); await sleep(4200);
+    const lay = JSON.parse(await B.ev(`JSON.stringify((()=>{ const t=document.querySelector('.vtabs').getBoundingClientRect(), b=document.getElementById('vbar').getBoundingClientRect(), v=document.getElementById('rv').getBoundingClientRect();
+      return {tabsBottom:t.bottom, barTop:b.top, barBottom:b.bottom, videoTop:v.top, barOpacity:getComputedStyle(document.getElementById('vbar')).opacity}; })())`));
+    log(lay.barTop >= lay.tabsBottom - 1 && lay.videoTop >= lay.barBottom - 1 && Number(lay.barOpacity) === 1, 'T30b a barra de ferramentas é fixa e a tela remota começa abaixo dela (não fica coberta nem some sozinha)', JSON.stringify(lay));
+    const mons = await B.ev(`(V.mons||[]).length`);
+    log(mons >= 1 && (await B.ev(`document.getElementById('monWrap').hidden`)) === (mons < 2), 'T30c o host informa os monitores e o botão só aparece com mais de um', 'monitores: ' + mons);
+    // simula um host com dois monitores no controlador e confere o menu e a mensagem enviada
+    await B.ev(`window.__sent=[]; const o=dc.send.bind(dc); dc.send=x=>{ window.__sent.push(x); o(x); };
+      viewerMsg(JSON.stringify({k:'hello',perms:V.perms,prof:'Padrão',ver:'0.4.5',mons:[{i:0,w:1920,h:1080,primary:true},{i:1,w:2560,h:1440}],mon:0})); 0`);
+    log((await B.ev(`document.getElementById('monWrap').hidden`)) === false && (await B.ev(`document.querySelectorAll('#mmenu button').length`)) === 2, 'T30d com 2 monitores aparece o botão e o menu lista os dois');
+    await B.ev(`document.getElementById('monBtn').click(); 0`); await B.ev(`document.querySelectorAll('#mmenu button')[1].click(); 0`);
+    log((await B.ev(`window.__sent.some(x=>x==='{"k":"mon","i":1}')`)) === true, 'T30e escolher o monitor 2 envia o pedido ao host');
+    if (mons >= 2) {   // este computador tem 2 monitores de verdade: o pedido troca a captura e o mouse, e o controlador é avisado
+      await until(A, `!!S&&S.mon===1&&!monBusy`, 25000, 'host no monitor 2'); await until(B, `V.mon===1`, 8000, 'controlador avisado do monitor 2');
+      log(true, 'T30e2 o host trocou para o monitor 2 de verdade e avisou o controlador');
+    } else await sleep(1500);
+    // host: trocar a captura no meio da sessão (com 1 monitor, recaptura o mesmo) sem derrubar a conexão
+    const before = await A.ev(`stream.getVideoTracks()[0].id`);
+    await A.ev(`hostMonitor(0).then(()=>1)`); await sleep(2500);
+    const after = await A.ev(`stream.getVideoTracks()[0].id`);
+    const f1 = await B.ev(`pc.getStats().then(s=>{ let n=0; s.forEach(r=>{ if(r.type==='inbound-rtp'&&r.kind==='video') n=r.framesDecoded; }); return n; })`); await sleep(1500);
+    const f2 = await B.ev(`pc.getStats().then(s=>{ let n=0; s.forEach(r=>{ if(r.type==='inbound-rtp'&&r.kind==='video') n=r.framesDecoded; }); return n; })`);
+    log(before !== after && f2 > f1 && (await B.ev(`pc.connectionState`)) === 'connected', 'T30f trocar a captura no host mantém a sessão e o vídeo continua chegando', `quadros ${f1} -> ${f2}`);
+    await until(B, `V.mon===0`, 8000, 'controlador avisado do monitor 1');
+    log(true, 'T30g de volta ao monitor 1, o controlador é avisado de qual monitor está em uso');
+    // painel de informações
+    await B.ev(`document.getElementById('infoBtn').click(); 0`); await sleep(300);
+    const info = JSON.parse(await B.ev(`JSON.stringify({open:!document.getElementById('imenu').hidden,rows:document.querySelectorAll('#imenu .pi').length,perm:PERMS.length,txt:document.getElementById('imenu').innerText})`));
+    log(info.open && info.rows === info.perm && /Padrão/.test(info.txt) && /verificada/.test(info.txt), 'T30h o painel de informações lista as permissões, o perfil e a identidade', info.rows + ' permissões');
+    await B.ev(`document.body.click(); 0`);
+    log((await A.ev(`INPUT_KINDS.has('reg')`)) === false, 'T30i o controlador não consegue mexer na região do mouse (só o próprio app do host)');
+    await B.ev('hangup(); 0'); await until(A, '!pc', 8000, 'host sem sessão');
+  });
+
+  await test('T31 gerenciador de arquivos em dois painéis (Upload e Baixar)', async () => {
+    const dl = path.join(B.dir, 'painelL'), dr = path.join(A.dir, 'painelR'); fs.mkdirSync(dl, { recursive: true }); fs.mkdirSync(dr, { recursive: true });
+    const up = mkData(300000), down = mkData(250000); fs.writeFileSync(path.join(dl, 'envio.bin'), up); fs.writeFileSync(path.join(dr, 'baixar.bin'), down);
+    const fwd = (x) => x.split(String.fromCharCode(92)).join('/');
+    await sessionAs('integral');
+    await B.ev(`document.getElementById('fmBtn').click(); 0`);
+    await until(B, `!document.getElementById('fmView').hidden&&document.querySelectorAll('#fmView .fmp').length===2`, 8000, 'visão aberta');
+    await B.ev(`lfmOpen('${fwd(dl)}').then(()=>0)`); await B.ev(`fmOpen('${fwd(dr)}').then(()=>0)`);
+    await until(B, `document.querySelectorAll('#fmView [data-side=L] .fmrow').length===1&&document.querySelectorAll('#fmView [data-side=R] .fmrow').length===1`, 10000, 'painéis listados');
+    log(true, 'T31a os dois painéis (este dispositivo e o remoto) listam suas pastas');
+    // sem nada selecionado, Upload só avisa
+    await B.ev(`document.querySelector('#fmView [data-a=upload]').click(); 0`); await sleep(400);
+    log(!fs.existsSync(path.join(dr, 'envio.bin')), 'T31b Upload sem seleção não envia nada');
+    // Upload: seleciona no painel da esquerda e envia para a pasta aberta à direita
+    await B.ev(`document.querySelector('#fmView [data-side=L] .fmrow').click(); 0`);
+    await B.ev(`document.querySelector('#fmView [data-a=upload]').click(); 0`);
+    for (let i = 0; i < 60 && !(fs.existsSync(path.join(dr, 'envio.bin')) && fs.statSync(path.join(dr, 'envio.bin')).size === up.length); i++) await sleep(300);
+    log(fs.existsSync(path.join(dr, 'envio.bin')) && sha(fs.readFileSync(path.join(dr, 'envio.bin'))) === sha(up), 'T31c Upload leva o arquivo do painel esquerdo para a pasta aberta no remoto, íntegro');
+    // Baixar: seleciona no painel da direita e baixa para a pasta aberta à esquerda
+    await until(B, `[...document.querySelectorAll('#fmView [data-side=R] .fmrow .nm')].some(n=>n.textContent==='baixar.bin')`, 8000, 'lista remota atualizada');
+    await B.ev(`[...document.querySelectorAll('#fmView [data-side=R] .fmrow')].find(r=>r.querySelector('.nm').textContent==='baixar.bin').click(); 0`);
+    await B.ev(`document.querySelector('#fmView [data-a=download]').click(); 0`);
+    for (let i = 0; i < 60 && !(fs.existsSync(path.join(dl, 'baixar.bin')) && fs.statSync(path.join(dl, 'baixar.bin')).size === down.length); i++) await sleep(300);
+    log(fs.existsSync(path.join(dl, 'baixar.bin')) && sha(fs.readFileSync(path.join(dl, 'baixar.bin'))) === sha(down), 'T31d Baixar traz o arquivo do remoto para a pasta aberta no painel esquerdo, íntegro');
+    await until(B, `[...document.querySelectorAll('#fmView [data-side=L] .fmrow .nm')].some(n=>n.textContent==='baixar.bin')`, 8000, 'painel esquerdo atualizado');
+    log(true, 'T31e o painel esquerdo mostra o arquivo baixado sozinho');
+    // enquanto o gerenciador está aberto, o teclado não vai para o computador remoto
+    const before = await A.ev('window.__in');
+    await B.ev(`window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyA'})); window.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyA'})); 0`); await sleep(700);
+    log((await A.ev('window.__in')) === before, 'T31f digitar no gerenciador não envia teclas para o computador remoto');
+    await B.ev(`document.getElementById('fmBtn').click(); 0`);
+    log((await B.ev(`document.getElementById('fmView').hidden`)) === true, 'T31g o botão fecha o gerenciador e volta à tela remota');
+    await endSession();
+  });
+
   await test('T15 canal de atualização', async () => {
     await A.ev(`setPref('updateMode','off'); 0`); await sleep(600);
     await A.ev(`fetch('/api/update?do=check',{method:'POST'}); 0`); await sleep(1500);

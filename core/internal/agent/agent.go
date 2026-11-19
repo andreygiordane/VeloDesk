@@ -44,6 +44,8 @@ type backend interface {
 	Wheel(dx, dy float64) // browser deltas in pixels (positive dy = scroll down)
 	ReleaseAll()
 	Size() (int, int)
+	// SetRegion aponta o mouse para um monitor (retângulo em pixels da área de trabalho virtual). w<=0 volta ao monitor principal.
+	SetRegion(x, y, w, h int)
 }
 
 // Injector drives the local desktop.
@@ -83,6 +85,8 @@ func (in *Injector) handle(e event) {
 	case "mu":
 		b.Move(clamp(e.X), clamp(e.Y))
 		b.Button(e.B, false)
+	case "reg":
+		b.SetRegion(int(e.X), int(e.Y), int(e.DX), int(e.DY))
 	case "wh":
 		b.Wheel(e.DX, e.DY)
 	case "kd":

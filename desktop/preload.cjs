@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('velodesk', {
     del: (k) => ipcRenderer.invoke('secret:del', k),
     keys: () => ipcRenderer.invoke('secret:keys'),
   },
+  display: { list: () => ipcRenderer.invoke('display:list'), select: (id) => ipcRenderer.invoke('display:select', String(id || '')) },
   overlay: { mark: (on) => ipcRenderer.invoke('overlay:mark', !!on), session: (on) => ipcRenderer.invoke('overlay:session', !!on), min: () => ipcRenderer.invoke('overlay:min'), size: (m) => ipcRenderer.invoke('overlay:size', m === 'full' ? 'full' : 'compact'), invite: (on) => ipcRenderer.invoke('overlay:invite', !!on) },
   notify: (t, b) => ipcRenderer.invoke('notify', t, b),
   pickFolder: () => ipcRenderer.invoke('dialog:folder'),

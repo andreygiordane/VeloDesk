@@ -17,6 +17,8 @@ type x11 struct {
 	x         *xgb.Conn
 	root      xproto.Window
 	w, h      uint16
+	rx, ry    int // monitor escolhido; rw=0: tela inteira
+	rw, rh    int
 	keycodes  map[uint32]byte
 	mu        sync.Mutex
 	downKeys  map[byte]bool
@@ -63,7 +65,20 @@ func (in *x11) fake(typ byte, detail byte, x, y int16) {
 	xtest.FakeInput(in.x, typ, detail, 0, in.root, x, y, 0)
 }
 
+func (in *x11) SetRegion(x, y, w, h int) {
+	in.mu.Lock()
+	in.rx, in.ry, in.rw, in.rh = x, y, w, h
+	in.mu.Unlock()
+}
+
 func (in *x11) Move(nx, ny float64) {
+	in.mu.Lock()
+	rx, ry, rw, rh := in.rx, in.ry, in.rw, in.rh
+	in.mu.Unlock()
+	if rw > 0 && rh > 0 {
+		in.fake(xproto.MotionNotify, 0, int16(float64(rx)+nx*float64(rw-1)), int16(float64(ry)+ny*float64(rh-1)))
+		return
+	}
 	in.fake(xproto.MotionNotify, 0, int16(nx*float64(in.w-1)), int16(ny*float64(in.h-1)))
 }
 

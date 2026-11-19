@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 ﻿// Casca do VeloDesk: abre a janela, inicia o nÃºcleo Go e mantÃ©m o app na bandeja.
 // Toda a lÃ³gica (sinalizaÃ§Ã£o, WebRTC, entrada remota) fica no nÃºcleo e na UI web.
-const { app, BrowserWindow, Tray, Menu, session, desktopCapturer, shell, nativeImage, ipcMain, clipboard, dialog, safeStorage, screen, Notification } = require('electron');
+const { app, BrowserWindow, Tray, Menu, session, desktopCapturer, shell, nativeImage, ipcMain, clipboard, dialog, safeStorage, screen, Notification, nativeTheme } = require('electron');
 const { spawn, execFileSync } = require('child_process');
 const path = require('path');
 const http = require('http');
@@ -118,6 +118,19 @@ function mkSession() {
   o.on('closed', () => { sesWin = null; });
   return o;
 }
+// Monitores: o controlador escolhe qual tela ver; "capDisplay" é o monitor usado na próxima captura ('' = principal).
+let capDisplay = '';
+function displayList() {
+  const prim = screen.getPrimaryDisplay().id;
+  const l = screen.getAllDisplays().map((d) => {
+    const r = process.platform === 'win32' && screen.dipToScreenRect ? screen.dipToScreenRect(null, d.bounds) : d.bounds;
+    return { id: String(d.id), primary: d.id === prim, x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+  });
+  l.sort((a, b) => (b.primary - a.primary) || (a.x - b.x) || (a.y - b.y));
+  return l.map((d, i) => ({ ...d, i }));
+}
+ipcMain.handle('display:list', () => displayList());
+ipcMain.handle('display:select', (_e, id) => { capDisplay = displayList().some((d) => d.id === String(id)) ? String(id) : ''; });
 ipcMain.handle('overlay:mark', (_e, on) => { if (on) { if (!markWin) markWin = mkMark(); } else if (markWin) markWin.close(); });
 ipcMain.handle('overlay:session', (_e, on) => {
   if (on) { if (!sesWin) sesWin = mkSession(); else { if (sesWin.isMinimized()) sesWin.restore(); sesWin.showInactive(); } }
@@ -210,7 +223,7 @@ function createWindow(show = true) {
   win = new BrowserWindow({
     show,
     width: 1200, height: 780, minWidth: 760, minHeight: 600,
-    backgroundColor: '#0a0910', title: 'VeloDesk', autoHideMenuBar: true, frame: false,
+    backgroundColor: '#0a0910', title: 'VeloDesk', autoHideMenuBar: true, frame: true,
     icon: ICON_PATH,
     webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, backgroundThrottling: false, preload: path.join(__dirname, 'preload.cjs') },
   });
@@ -255,9 +268,14 @@ if (!app.requestSingleInstanceLock({ version: MY_VERSION })) {
   app.whenReady().then(async () => {
     // getDisplayMedia no Electron precisa de um handler: compartilha a tela principal
     // sem exibir o seletor (o aceite jÃ¡ Ã© feito dentro do VeloDesk).
+    nativeTheme.themeSource = 'dark';   // barra de título escura, combinando com o app
+    Menu.setApplicationMenu(null);
     session.defaultSession.setDisplayMediaRequestHandler((_req, cb) => {
       desktopCapturer.getSources({ types: ['screen'] })
-        .then((sources) => cb(sources[0] ? { video: sources[0] } : {}))
+        .then((sources) => {
+          const want = capDisplay || String(screen.getPrimaryDisplay().id);
+          cb(sources.length ? { video: sources.find((s) => String(s.display_id) === want) || sources[0] } : {});
+        })
         .catch(() => cb({}));
     });
     startCore();

@@ -231,8 +231,66 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .profs button.add{background:transparent;border:1px dashed var(--line)}
 
 /* ---- sessão ---- */
-#viewer{position:fixed;inset:0;background:#05040a;display:none;z-index:20}
-#viewer.show{display:block}
+#viewer{position:fixed;inset:0;background:#171717;display:none;flex-direction:column;z-index:20}
+#viewer.show{display:flex}
+.vtabs{display:flex;align-items:flex-end;gap:8px;height:38px;padding:0 12px;background:#0b0a12;border-bottom:1px solid var(--line);flex:none}
+.vlogo{display:flex;align-items:center;gap:8px;align-self:center;font-weight:700;margin-right:6px;color:var(--ink)}
+.vlogo svg{width:20px;height:20px}
+.vtab{display:flex;align-items:center;gap:8px;height:30px;padding:0 14px;background:var(--card);border:1px solid var(--line);border-bottom:0;border-radius:8px 8px 0 0;color:var(--ink);font-size:13px;max-width:280px}
+.vtab svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;flex:none}
+.vtab span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vtool{position:relative;z-index:6;display:flex;align-items:center;gap:10px;height:46px;padding:0 12px;background:var(--card);border-bottom:1px solid var(--line);flex:none;color:var(--ink);transition:opacity .2s,transform .2s}
+.vtool .grow{flex:1}
+.vtool .sep{width:1px;height:22px;background:var(--line)}
+.vtool .meta{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;white-space:nowrap}
+.vtool .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.vtool .icon svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.vok{width:22px;height:22px;border-radius:6px;background:rgba(45,211,111,.16);display:grid;place-items:center;flex:none}
+.vok svg{width:14px;height:14px;stroke:var(--ok);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.vstage{flex:1;min-height:0;position:relative;background:#171717}
+.vstage video{position:absolute;inset:0}
+.menu.wide{min-width:360px;padding:8px 6px;max-height:calc(100vh - 130px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#3a3750 transparent}
+.fmlist{scrollbar-width:thin;scrollbar-color:#3a3750 transparent}
+#mmenu{min-width:270px}
+#viewer .menu button{white-space:nowrap}
+.menu .pi{display:flex;gap:10px;align-items:center;padding:5px 12px;font-size:13px;color:var(--ink)}
+.menu .pi svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.menu .pi.ok svg{stroke:var(--ok)} .menu .pi.no{color:var(--muted)} .menu .pi.no svg{stroke:var(--bad)}
+.menu .ph{padding:8px 12px 3px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.menu .kv{display:flex;justify-content:space-between;gap:16px;padding:3px 12px;font-size:13px}
+.menu .kv span:first-child{color:var(--muted)}
+.menu button.on{color:var(--accent);font-weight:700}
+.icon.mon{position:relative}
+.icon.mon b{position:absolute;right:1px;bottom:1px;min-width:15px;height:15px;font-size:10px;line-height:15px;text-align:center;background:var(--accent);color:#fff;border-radius:8px;padding:0 3px}
+#viewer:fullscreen .vtabs{display:none}
+#viewer:fullscreen .vtool{position:absolute;top:0;left:0;right:0}
+#viewer:fullscreen .vtool.hide{opacity:0;pointer-events:none;transform:translateY(-100%)}
+#viewer:fullscreen .vstage{position:absolute;inset:0}
+#fmView{position:absolute;inset:0;z-index:4;background:#0f0e15;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr auto;gap:0}
+.fmp{display:flex;flex-direction:column;min-width:0;min-height:0;border-right:1px solid var(--line)}
+.fmp:nth-child(2){border-right:0}
+.fmh{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.fmav{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#9b4dff,#5b12aa);display:grid;place-items:center;flex:none}
+.fmav svg{width:20px;height:25px}
+.fmwho{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.fmwho .fid{color:var(--ok);font-size:12px} .fmwho b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fmh .grow{flex:1}
+.fbtn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:9px;background:var(--accent);color:#fff;font-weight:700;border:0}
+.fbtn.ghost{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
+.fbtn:disabled{opacity:.45}
+.fmnav{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.fmnav button{width:30px;height:30px;border-radius:8px;background:var(--card2);border:1px solid var(--line);color:var(--ink);padding:0}
+.fmnav button:disabled{opacity:.4}
+.fmpath{flex:1;min-width:0;padding:6px 10px;border-radius:8px;background:var(--card2);border:1px solid var(--line);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left}
+.fmcols,.fmrow{display:grid;grid-template-columns:24px minmax(0,1fr) 90px 150px;gap:8px;align-items:center;padding:4px 12px;font-size:13px}
+.fmcols{color:var(--muted);font-size:12px;border-bottom:1px solid var(--line);padding-top:7px;padding-bottom:7px}
+.fmlist{flex:1;min-height:0;overflow-y:auto}
+.fmrow{cursor:default;user-select:none;border-radius:0}
+.fmrow:hover{background:var(--soft)} .fmrow.sel{background:rgba(124,58,237,.30)}
+.fmrow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fmrow .sz,.fmrow .dt{color:var(--muted);font-size:12px;white-space:nowrap}
+.fmnone{padding:22px;color:var(--muted);text-align:center} .fmnone.err{color:var(--bad)}
+.fmfoot{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:8px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);background:var(--card)}
 #viewer video{width:100%;height:100%;object-fit:contain;cursor:none;outline:none}
 .bar{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:12px;padding:5px 6px 5px 14px;display:flex;gap:10px;align-items:center;color:var(--ink);box-shadow:0 8px 30px rgba(0,0,0,.5);transition:opacity .25s,transform .25s;max-width:calc(100vw - 24px)}
 .bar.hide{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(-8px)}
@@ -288,6 +346,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
   <linearGradient id="appg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9b4dff"/><stop offset="1" stop-color="#5b12aa"/></linearGradient>
   <!-- Ícone do app: o raio da marca dentro de um quadrado de cantos arredondados -->
+  <symbol id="bolt" viewBox="385 427 470 568"><polygon points="563,427 765,427 648,640 835,636 478,995 585,745 404,750" fill="#fff"/></symbol>
   <symbol id="i-app" viewBox="0 0 100 100">
     <rect width="100" height="100" rx="24" fill="url(#appg)" stroke="none"/>
     <svg x="27" y="19" width="46" height="62" viewBox="385 427 470 568">
@@ -522,7 +581,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
         <div class="field"><span>Limite de banda</span><select data-pref="mbps" data-num><option value="0">Automático</option><option value="2">2 Mbps</option><option value="5">5 Mbps</option><option value="10">10 Mbps</option><option value="20">20 Mbps</option></select></div>
       </div></div>
       <div class="grp"><h5>Ao controlar outra máquina</h5><div class="box">
-        <label class="switch"><span class="ot"><b>Ocultar a barra da sessão sozinha</b><small>Volta ao passar o mouse no topo</small></span><span class="tg"><input type="checkbox" data-pref="hideBar"><span></span></span></label>
+        <label class="switch"><span class="ot"><b>Ocultar a barra em tela cheia</b><small>Volta ao passar o mouse no topo da tela</small></span><span class="tg"><input type="checkbox" data-pref="hideBar"><span></span></span></label>
         <label class="switch"><span class="ot"><b>Mostrar também o cursor deste computador</b><small>Por padrão só aparece o cursor da máquina remota</small></span><span class="tg"><input type="checkbox" data-pref="showLocalCursor"><span></span></span></label>
       </div></div>
     </section>
@@ -552,10 +611,12 @@ button:disabled{opacity:.45;cursor:not-allowed}
 </div>
 
 <div id="viewer">
-  <video id="rv" autoplay playsinline muted tabindex="0"></video>
-  <div class="loading" id="vload"><div><svg class="appico"><use href="#i-app"/></svg><span id="vmsg">Aguardando aceite…</span></div></div>
-  <div class="bar" id="vbar">
-    <span class="dot on" id="vdot" style="display:none"></span>
+  <div class="vtabs">
+    <span class="vlogo"><svg><use href="#i-app"/></svg>VeloDesk</span>
+    <span class="vtab"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><span id="vtabName">Sessão remota</span></span>
+  </div>
+  <div class="vtool" id="vbar">
+    <span class="vok" id="vdot" style="display:none"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span>
     <span class="name" id="vinfo">Conectando…</span>
     <span class="chip warn" id="vperm" hidden>Somente visualização</span>
     <span class="chip warn" id="vver" hidden></span>
@@ -563,11 +624,16 @@ button:disabled{opacity:.45;cursor:not-allowed}
     <span class="q" id="vq" style="display:none"><i></i><span id="vlat">— ms</span></span>
     <span class="meta" id="vbw"></span>
     <span class="meta" id="vmeta"></span>
-    <span class="sep"></span>
+    <span class="grow"></span>
+    <div class="menuwrap"><button class="icon" id="infoBtn" title="Informações da sessão e permissões"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg></button>
+      <div class="menu wide" id="imenu" hidden></div></div>
+    <div class="menuwrap" id="monWrap" hidden><button class="icon mon" id="monBtn" title="Escolher o monitor"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><b id="monNum">1</b></button>
+      <div class="menu" id="mmenu" hidden></div></div>
+    <button class="icon" id="fmBtn" title="Gerenciador de arquivos (este dispositivo e o remoto)"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></button>
     <button class="icon" id="fileBtn" title="Enviar ou receber arquivos"><svg><use href="#i-file"/></svg></button>
     <button class="icon badge" id="chatBtn" title="Chat com o outro computador"><svg><use href="#i-chat"/></svg><i class="udot" id="chatDot" hidden></i></button>
     <button class="icon" id="recBtn" title="Gravar sessão" hidden><svg><use href="#i-rec"/></svg></button>
-    <div class="menuwrap"><button class="icon" id="actBtn" title="Ações"><svg><use href="#i-more"/></svg></button>
+    <div class="menuwrap"><button class="icon" id="actBtn" title="Ações"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></button>
       <div class="menu" id="amenu" hidden>
         <button data-a="files" data-p="filemgr">Gerenciador de arquivos…</button>
         <button data-a="print">Imprimir no computador remoto…</button>
@@ -579,6 +645,11 @@ button:disabled{opacity:.45;cursor:not-allowed}
       </div></div>
     <button class="icon" onclick="toggleFs()" title="Tela cheia"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
     <button class="danger sm" onclick="hangup()">Encerrar</button>
+  </div>
+  <div class="vstage">
+    <video id="rv" autoplay playsinline muted tabindex="0"></video>
+    <div id="fmView" hidden></div>
+    <div class="loading" id="vload"><div><svg class="appico"><use href="#i-app"/></svg><span id="vmsg">Aguardando aceite…</span></div></div>
   </div>
 </div>
 
@@ -838,6 +909,7 @@ async function connectAgent(){
 }
 const INPUT_KINDS=new Set(['mm','md','mu','wh','kd','ku']);
 function forwardInput(raw){ if(agentReady) try{ if(INPUT_KINDS.has(JSON.parse(raw).k)) agent.send(raw); }catch{} }
+const agentReg=(x,y,w,h)=>{ if(agentReady) try{ agent.send(JSON.stringify({k:'reg',x,y,dx:w,dy:h})); }catch{} };   // só o próprio app manda; o controlador não alcança
 
 /* ---------- dispositivos (apelido, favorito, acesso salvo) ---------- */
 let devices=store.get('devices',null);
@@ -1035,9 +1107,9 @@ function cleanup(){
   clearTimeout(connTimer); clearInterval(statsTimer); clearInterval(tickTimer); stopClip(); stopRec();
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
   if(pc){pc.onconnectionstatechange=null;pc.close();pc=null}
-  closeTuns(); fm.path=''; fm.parent=''; fm.entries=[]; fm.loaded=false; fm.err=''; fmWait.clear(); fmReq.clear();
+  closeTuns(); fm.path=''; fm.parent=''; fm.entries=[]; fm.loaded=false; fm.err=''; fmWait.clear(); fmReq.clear(); fmDest.clear();
   dc=null; dcf=null; dcFile=null; peerId=null; role=null; lastT=0; S=null; V=null; iceHold=false; iceOut=[]; iceIn=[];
-  $('viewer').classList.remove('show'); $('rv').srcObject=null; $('amenu').hidden=true;
+  $('viewer').classList.remove('show'); $('rv').srcObject=null; $('amenu').hidden=true; $('imenu').hidden=true; $('mmenu').hidden=true; $('monWrap').hidden=true; closeFmView();
   $('vdot').style.display='none'; $('vq').style.display='none'; $('vload').style.display=''; $('vmeta').textContent=''; $('vbw').textContent='';
   $('vperm').hidden=true; $('vrec').hidden=true; $('recBtn').hidden=true; $('vver').hidden=true;
   if(document.fullscreenElement) document.exitFullscreen();
@@ -1059,7 +1131,8 @@ async function pollStats(){
   if(rtt!=null){ $('vlat').textContent=Math.round(rtt)+' ms'; $('vq').className='q '+(rtt<60?'g':rtt<150?'y':'r'); }
   if(bytes!=null){ const now=performance.now(); if(lastT) $('vbw').textContent=((bytes-lastBytes)*8/1e6/((now-lastT)/1000)).toFixed(1)+' Mbps'; lastBytes=bytes; lastT=now; }
 }
-function armHide(){ $('vbar').classList.remove('hide'); clearTimeout(hideTimer); if(P.hideBar) hideTimer=setTimeout(()=>{ if($('amenu').hidden) $('vbar').classList.add('hide'); },3000); }
+function armHide(){ const b=$('vbar'); b.classList.remove('hide'); clearTimeout(hideTimer); if(document.fullscreenElement&&P.hideBar) hideTimer=setTimeout(()=>{ if(!document.querySelector('#viewer .menu:not([hidden])')) b.classList.add('hide'); },3000); }
+document.addEventListener('fullscreenchange',armHide);
 $('viewer').addEventListener('mousemove',e=>{ if(e.clientY<90) armHide(); });
 function toggleFs(){ document.fullscreenElement?document.exitFullscreen():$('viewer').requestFullscreen(); }
 
@@ -1118,8 +1191,8 @@ function bindInput(){
   v.onmousemove=e=>tx({k:'mm',...pos(e)});
   v.onmousedown=e=>{v.focus();tx({k:'md',b:e.button,...pos(e)})}; v.onmouseup=e=>tx({k:'mu',b:e.button,...pos(e)});
   v.onwheel=e=>{tx({k:'wh',dx:e.deltaX,dy:e.deltaY});e.preventDefault()}; v.oncontextmenu=e=>e.preventDefault();
-  window.onkeydown=e=>{ if($('viewer').classList.contains('show')&&role==='viewer'&&!document.activeElement.matches('input,textarea,select')){ tx({k:'kd',code:e.code}); e.preventDefault(); } };
-  window.onkeyup=e=>{ if($('viewer').classList.contains('show')&&role==='viewer'&&!document.activeElement.matches('input,textarea,select')) tx({k:'ku',code:e.code}); };
+  window.onkeydown=e=>{ if($('viewer').classList.contains('show')&&role==='viewer'&&!fmViewOn&&!document.activeElement.matches('input,textarea,select')){ tx({k:'kd',code:e.code}); e.preventDefault(); } };
+  window.onkeyup=e=>{ if($('viewer').classList.contains('show')&&role==='viewer'&&!fmViewOn&&!document.activeElement.matches('input,textarea,select')) tx({k:'ku',code:e.code}); };
 }
 // mensagens do host para o controlador (canal confiável, já protegido por DTLS)
 const verNewer=(a,b)=>{ const x=String(a).split('.').map(Number), y=String(b).split('.').map(Number); for(let i=0;i<3;i++){ const d=(x[i]||0)-(y[i]||0); if(d) return d>0; } return false; };
@@ -1132,7 +1205,7 @@ function checkHostVersion(v){
 }
 function applyViewerPerms(){
   $('vperm').hidden=!!V.perms.control;
-  $('recBtn').hidden=!(P.recEnable&&V.perms.record&&window.MediaRecorder);
+  $('recBtn').hidden=!(P.recEnable&&V.perms.record&&window.MediaRecorder); $('fmBtn').disabled=!V.perms.filemgr;
   for(const b of $('amenu').querySelectorAll('button')) b.disabled=!V.perms[b.dataset.p||b.dataset.a];
   if(!V.perms.clipboard) stopClip(); else if(P.syncClip&&!clipTimer) startClip();
   chatChanged();
@@ -1140,8 +1213,10 @@ function applyViewerPerms(){
 async function viewerMsg(raw){
   let m; try{ m=JSON.parse(raw); }catch{ return; }
   if(!V) return;
+  if(m.k==='mon'){ V.mon=m.i|0; renderMons(); return; }
   if(m.k==='hello'){
-    V.perms=m.perms||{}; rc=null;
+    V.perms=m.perms||{}; rc=null; V.profName=typeof m.prof==='string'?m.prof.slice(0,60):''; V.hver=typeof m.ver==='string'?m.ver.slice(0,20):'';
+    V.mons=Array.isArray(m.mons)?m.mons.slice(0,8).filter(d=>d&&Number.isInteger(d.i)&&d.i>=0&&d.i<8).map(d=>({i:d.i,w:d.w|0,h:d.h|0,primary:!!d.primary})):[]; V.mon=m.mon|0; renderMons();
     $('vrec').hidden=!m.rec; applyViewerPerms(); checkHostVersion(m.ver);
     const dv=devices[V.to];
     if(dv){
@@ -1161,11 +1236,58 @@ async function viewerMsg(raw){
   else if(m.k==='fm'){ const w=fmWait.get(m.id); if(w){ fmWait.delete(m.id); m.ok?w.res(m.data||{}):w.rej(new Error(m.err||'Falhou')); } }
   else if(m.k==='denied') toast('O perfil deste computador não permite essa ação',true);
 }
-$('actBtn').onclick=e=>{ e.stopPropagation(); $('amenu').hidden=!$('amenu').hidden; };
-document.addEventListener('click',()=>{ $('amenu').hidden=true; });
+const popMenus=['amenu','imenu','mmenu'];
+const openMenu=(id)=>{ const was=!$(id).hidden; popMenus.forEach(m=>$(m).hidden=true); $(id).hidden=was; };
+$('actBtn').onclick=e=>{ e.stopPropagation(); openMenu('amenu'); };
+$('infoBtn').onclick=e=>{ e.stopPropagation(); renderInfo(); openMenu('imenu'); };
+$('monBtn').onclick=e=>{ e.stopPropagation(); renderMons(); openMenu('mmenu'); };
+$('imenu').onclick=e=>e.stopPropagation();
+document.addEventListener('click',()=>{ popMenus.forEach(m=>$(m).hidden=true); });
+new MutationObserver(()=>{ $('vtabName').textContent=$('vinfo').textContent||'Sessão remota'; }).observe($('vinfo'),{childList:true,characterData:true,subtree:true});
+const CHK='<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>', CRS='<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+function renderInfo(){
+  const pm=(V&&V.perms)||{};
+  const rows=PERMS.map(([k,l])=>`<div class="pi ${pm[k]?'ok':'no'}">${pm[k]?CHK:CRS}<span>${esc(l)}</span></div>`).join('');
+  const hv=V&&V.hver?V.hver:'—';
+  $('imenu').innerHTML=`<div class="ph">Esta sessão</div>
+    <div class="kv"><span>Computador</span><span>${esc(V?dname(V.to):'')}</span></div>
+    <div class="kv"><span>ID</span><span>${esc(V?fmt(V.to):'')}</span></div>
+    <div class="kv"><span>Perfil</span><span>${esc((V&&V.profName)||'—')}</span></div>
+    <div class="kv"><span>Versão do VeloDesk remoto</span><span>${esc(hv)}</span></div>
+    <div class="kv"><span>Tempo de sessão</span><span>${esc($('vmeta').textContent||'00:00')}</span></div>
+    <div class="kv"><span>Identidade</span><span style="color:var(--ok)">verificada</span></div>
+    <div class="ph">Permissões neste computador</div>${rows}
+    <div class="ph">Sistema</div><div style="padding:2px 6px"><button class="ghost sm" id="infoSys" style="width:100%">Ver informações do sistema…</button></div>`;
+  const b=$('infoSys'); if(b){ b.disabled=!pm.sysinfo; b.onclick=()=>{ $('imenu').hidden=true; $('amenu').querySelector('[data-a=sysinfo]').click(); }; }
+}
+function renderMons(){
+  const l=(V&&V.mons)||[];
+  $('monWrap').hidden=l.length<2; $('monNum').textContent=String(((V&&V.mon)||0)+1);
+  $('mmenu').innerHTML=l.map(d=>`<button data-i="${d.i}" class="${d.i===((V&&V.mon)||0)?'on':''}">Monitor ${d.i+1}${d.primary?' (principal)':''} · ${d.w}×${d.h}</button>`).join('');
+  $('mmenu').querySelectorAll('button').forEach(b=>b.onclick=()=>{ $('mmenu').hidden=true; if(dc&&dc.readyState==='open') dc.send(JSON.stringify({k:'mon',i:Number(b.dataset.i)})); });
+}
+// host: troca o monitor compartilhado sem derrubar a sessão (novo vídeo no mesmo canal) e aponta o mouse para ele
+let monBusy=false;
+async function hostMonitor(i){
+  if(monBusy||!S||!pc||!sh||!sh.display||!Number.isInteger(i)) return;
+  monBusy=true;
+  try{
+    const l=await sh.display.list(), d=l.find(x=>x.i===i); if(!d) return;
+    await sh.display.select(d.id);
+    const ns=await grabScreen(), nt=ns.getVideoTracks()[0];
+    const sn=pc.getSenders().find(x=>x.track&&x.track.kind==='video'); if(!sn){ ns.getTracks().forEach(t=>t.stop()); return; }
+    await sn.replaceTrack(nt);
+    const old=stream; stream=ns; nt.onended=hangup;
+    if(old) old.getTracks().forEach(t=>{ t.onended=null; t.stop(); });
+    await tuneVideo(nt);
+    S.mon=i; agentReg(d.x,d.y,d.w,d.h);
+    if(dc&&dc.readyState==='open') dc.send(JSON.stringify({k:'mon',i}));
+  }catch(e){ toast('Não foi possível trocar de monitor: '+(e&&e.message||e),true); }
+  finally{ monBusy=false; }
+}
 $('amenu').querySelectorAll('button').forEach(b=>b.onclick=async()=>{
   const a=b.dataset.a; $('amenu').hidden=true;
-  if(a==='files') return toggleChat(true,'fm');
+  if(a==='files') return openFmView();
   if(a==='tunnels'){ renderTuns(); $('tundlg').classList.add('show'); return; }
   if(a==='print') return openPrint();
   if(!dc||dc.readyState!=='open') return;
@@ -1281,8 +1403,10 @@ async function onRequest(from,d){
     }
     const prof=profById(profId);
     S={from,how:who.how,via:who.via,ctx,macFn:who.macFn,perms:cleanPerms(custom||prof.perms),profId:prof.id,custom:!!custom,profName:prof.name+(custom?' (ajustado)':''),last:Date.now(),want:!!au.want};
+    try{ if(sh&&sh.display) await sh.display.select(''); }catch{}
     try{ stream=await grabScreen(); }
     catch{ S=null; toast('Compartilhamento cancelado',true); return rej('denied'); }
+    S.mon=0; agentReg(0,0,0,0);
     role='host'; mkPeer(from);
     stream.getTracks().forEach(t=>pc.addTrack(t,stream));
     stream.getVideoTracks()[0].onended=hangup;
@@ -1307,6 +1431,7 @@ async function onAnswer(d){
 async function sendHello(){
   if(!S||!dc||dc.readyState!=='open') return;
   const hello={k:'hello',perms:S.perms,prof:S.profName,rec:!!(P.autoRecIn&&P.recEnable),ver:upd.current||''};
+  try{ if(sh&&sh.display){ const l=await sh.display.list(); hello.mons=l.map(d=>({i:d.i,w:d.w,h:d.h,primary:d.primary})); hello.mon=S.mon||0; } }catch{}
   if(S.want&&S.how!=='token'&&P.allowSave){ try{ const t=await api('/api/token/issue',{for:S.from,via:S.via}); hello.tok={id:t.id,secret:t.secret}; }catch{} }
   try{ const w=await api('/api/wol/self'); if(P.wolMode!=='off'&&w.macs&&w.macs[0]) hello.mac=w.macs[0]; }catch{}
   try{ const r=await fetch('/api/wallpaper',{headers:{'X-Agent-Token':agentTok}}); if(r.ok){ const b=await r.blob(); if(b.size<150000) hello.wall=await new Promise(res=>{ const f=new FileReader(); f.onload=()=>res(f.result); f.readAsDataURL(b); }); } }catch{}
@@ -1321,6 +1446,7 @@ async function hostMsg(raw){
   if(m.k==='chat'){ S.last=Date.now(); chatGot(m.t); return; }
   if(m.k==='clip'){ if(S.perms.clipboard){ S.last=Date.now(); gotClip(m.t); } return; }
   if(m.k==='fm') return hostFm(m);
+  if(m.k==='mon') return hostMonitor(m.i);
   if(m.k!=='act') return;
   const reply=o=>{ if(dc&&dc.readyState==='open') dc.send(JSON.stringify(o)); };
   S.last=Date.now();
@@ -1340,6 +1466,7 @@ setInterval(()=>{ if(S&&role==='host'&&P.autoDisc&&Date.now()-S.last>P.autoDiscM
 /* ---------- chat e avisos de acesso ---------- */
 const bc=('BroadcastChannel' in window)?new BroadcastChannel('velodesk-ui'):null;   // fala com as janelas flutuantes (overlay.html)
 const chat={log:[],unread:0,open:false,tab:''};
+let fmViewOn=false;
 let ovState={type:'state',live:false}, overlayHide;
 const shellHost=()=>role==='host'&&!!(sh&&sh.overlay);
 const chatWho=()=>role==='host'?(S?dname(S.from):''):(V?dname(V.to):'');
@@ -1349,6 +1476,7 @@ function pushOverlay(extra){
   if(bc) bc.postMessage(ovState);
 }
 function chatChanged(){
+  if(fmViewOn) renderFmView();
   const dot=!!chat.unread||xfers.some(x=>x.state==='offer'); $('chatDot').hidden=!dot; $('liveDot').hidden=!dot;
   if(!shellHost()){ $('chatp').hidden=!chat.open; $('chatT').textContent='Chat com '+chatWho(); panel.render(); }
   pushOverlay();
@@ -1455,6 +1583,7 @@ function onFileOffer(m){
   if(typeof m.name!=='string'||!(m.size>=0)||m.size>fileLimit()) return deny('size');
   if(isPrint&&!/\.(pdf|txt|png|jpe?g|bmp|gif)$/i.test(m.name)) return deny('type');
   const x={uid:++xuid,dir:'in',rid:m.id,name:m.name.slice(0,200),size:m.size,done:0,state:'offer',dest:isDest?m.dest:undefined,print:isPrint?String(m.print||'').slice(0,200):undefined}; xfers.push(x);
+  if(isRq&&fmDest.has(m.rq)) x.dest=fmDest.get(m.rq);                         // download para a pasta aberta no painel deste dispositivo
   if(isRq||isDest) acceptX(x);                                                     // pedido explícito pelo gerenciador de arquivos
   else if(role==='host'&&(P.auto||(S.via==='fixed'&&P.unattended))) acceptX(x);       // sem ninguém na frente da tela
   else if(role==='host'){ toggleChat(true,'files'); if(sh&&sh.notify) sh.notify('Arquivo para aprovar',dname(S.from)+' quer enviar '+x.name); }
@@ -1493,7 +1622,7 @@ function flushRx(x){
 }
 async function finishRx(x){
   if(x.state!=='active') return; flushRx(x); await x.rx.chain; if(x.state!=='active') return;
-  try{ const r=await api('/api/file/end',{tid:x.tid,ok:x.done===x.size}); if(r.ok){ x.state='done'; x.saved=r.name; toast(x.print!==undefined?'Imprimindo: '+r.name:'Arquivo recebido: '+r.name); if(x.print!==undefined) printX(x); } else { x.state='error'; x.err='Arquivo incompleto'; } }
+  try{ const r=await api('/api/file/end',{tid:x.tid,ok:x.done===x.size}); if(r.ok){ x.state='done'; x.saved=r.name; if(x.dest) setTimeout(()=>{ if(fmViewOn) lfmOpen(lfm.path); },700); toast(x.print!==undefined?'Imprimindo: '+r.name:'Arquivo recebido: '+r.name); if(x.print!==undefined) printX(x); } else { x.state='error'; x.err='Arquivo incompleto'; } }
   catch(e){ x.state='error'; x.err=e.message; }
   xNotify();
 }
@@ -1514,7 +1643,7 @@ async function streamX(x){
 }
 
 /* ---------- gerenciador de arquivos remoto ---------- */
-const fmWait=new Map(), fmReq=new Set(); let fmId=0;
+const fmWait=new Map(), fmReq=new Set(), fmDest=new Map(); let fmId=0;
 const fm={path:'',parent:'',entries:[],busy:false,err:'',loaded:false};
 const canFm=()=>role==='viewer'&&!!(V&&V.perms&&V.perms.filemgr);
 function fmCall(op,args={},id=++fmId){
@@ -1557,6 +1686,74 @@ async function hostFm(m){
     else reply({ok:false,err:'Operação desconhecida'});
   }catch(e){ reply({ok:false,err:e.message}); }
 }
+
+/* ---------- gerenciador de arquivos em dois painéis (este dispositivo | remoto) ---------- */
+const lfm={path:'',parent:'',entries:[],busy:false,err:'',loaded:false}, selL=new Set(), selR=new Set(); let lastRPath=null;
+const fsz=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1).replace('.',',')+' KiB':n<1073741824?(n/1048576).toFixed(1).replace('.',',')+' MiB':(n/1073741824).toFixed(2).replace('.',',')+' GiB';
+const fwhen=t=>t?new Date(t*1000).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'';
+async function lfmOpen(path){
+  lfm.busy=true; lfm.err=''; renderFmView();
+  try{ const d=await apiT('/api/fs/list',{path}); lfm.path=d.path; lfm.parent=d.parent; lfm.entries=d.entries||[]; lfm.loaded=true; selL.clear(); }
+  catch(e){ lfm.err=e.message; lfm.loaded=true; }
+  lfm.busy=false; renderFmView();
+}
+function paneHtml(side){
+  const L=side==='L', st=L?lfm:fm, sel=L?selL:selR;
+  const rows=st.busy?'<div class="fmnone">Carregando…</div>':st.err?`<div class="fmnone err">${esc(st.err)}</div>`:
+    (st.entries||[]).map(e=>`<div class="fmrow${sel.has(e.p)?' sel':''}" data-s="${side}" data-p="${esc(e.p)}" data-d="${e.d?1:0}"><span>${e.d?'📁':'📄'}</span><span class="nm" title="${esc(e.n)}">${esc(e.n)}</span><span class="sz">${e.d?'':fsz(e.s)}</span><span class="dt">${esc(fwhen(e.m))}</span></div>`).join('')||'<div class="fmnone">Pasta vazia</div>';
+  const who=L?`<span class="fid">(${esc(fmt(myId))})</span><b>Este dispositivo</b>`:`<span class="fid">(${esc(V?fmt(V.to):'')})</span><b>${esc(V?dname(V.to):'Dispositivo remoto')}</b>`;
+  const w=!!(V&&V.perms&&V.perms.filewrite);
+  const acts=L?`<button class="fbtn" data-a="upload" title="Envia os arquivos selecionados para a pasta aberta no computador remoto"${w?'':' disabled'}>⇧ Upload</button>`
+              :`<button class="fbtn ghost" data-a="mkdir" title="Nova pasta no computador remoto"${w&&fm.path?'':' disabled'}>＋ Pasta</button><button class="fbtn ghost" data-a="del" title="Excluir no computador remoto"${w&&fm.path?'':' disabled'}>Excluir</button><button class="fbtn" data-a="download" title="Baixa os arquivos selecionados para a pasta aberta neste dispositivo">⇩ Baixar</button>`;
+  return `<section class="fmp" data-side="${side}"><div class="fmh"><div class="fmav"><svg><use href="#bolt"/></svg></div><div class="fmwho">${who}</div><span class="grow"></span>${acts}</div>
+    <div class="fmnav"><button data-n="up" title="Pasta acima"${st.path?'':' disabled'}>↑</button><button data-n="home" title="Início">⌂</button><button data-n="ref" title="Atualizar">⟳</button><span class="fmpath" title="${esc(st.path)}">${esc(st.path||'Computador')}</span></div>
+    <div class="fmcols"><span></span><span>Nome</span><span>Tamanho</span><span>Modificado</span></div><div class="fmlist">${rows}</div></section>`;
+}
+function renderFmView(){
+  if(!fmViewOn) return;
+  if(lastRPath!==fm.path){ selR.clear(); lastRPath=fm.path; }
+  const busy=xfers.filter(x=>['offer','wait','active'].includes(x.state));
+  $('fmView').innerHTML=paneHtml('L')+paneHtml('R')+`<div class="fmfoot"><span>${busy.length?`Transferindo ${busy.length} arquivo(s)…`:'Selecione arquivos num painel e use Upload (esquerda → remoto) ou Baixar (remoto → esquerda).'}</span></div>`;
+  $('fmBtn').classList.toggle('on',true);
+}
+function openFmView(){
+  if(!V||!canFm()){ toast('O perfil desta sessão não permite o gerenciador de arquivos',true); return; }
+  fmViewOn=true; $('fmView').hidden=false; lastRPath=null;
+  if(!lfm.loaded) lfmOpen(''); if(!fm.loaded&&!fm.busy) fmOpen('');
+  renderFmView();
+}
+function closeFmView(){ fmViewOn=false; $('fmView').hidden=true; $('fmView').innerHTML=''; lfm.loaded=false; lfm.entries=[]; lfm.path=''; selL.clear(); selR.clear(); $('fmBtn').classList.remove('on'); }
+async function uploadLocal(path,dest){
+  const r=await fetch('/api/fs/read?off=0&n=0&path='+encodeURIComponent(path),{headers:{'X-Agent-Token':agentTok}});
+  if(!r.ok) throw new Error((await r.text()).trim()||'Não foi possível abrir o arquivo');
+  const size=Number(r.headers.get('X-File-Size')||0), name=path.split(/[\\/]/).pop();
+  if(size>fileLimit()) throw new Error(name+': maior que o limite de '+Math.round(fileLimit()/1048576)+' MB');
+  const x={uid:++xuid,dir:'out',name,size,done:0,state:'wait',dest,read:async(o,n)=>(await fetch('/api/fs/read?off='+o+'&n='+n+'&path='+encodeURIComponent(path),{headers:{'X-Agent-Token':agentTok}})).arrayBuffer()}; xfers.push(x);
+  sendF({t:'offer',o:1,id:x.uid,name,size,dest}); xNotify();
+}
+async function fmUpload(){
+  const s=sessNow(); if(!(s&&s.perms&&s.perms.filewrite)) return toast('O perfil desta sessão não permite enviar arquivos para o computador remoto',true);
+  if(!fm.path) return toast('Abra uma pasta no computador remoto (painel da direita) para receber os arquivos',true);
+  const files=lfm.entries.filter(e=>selL.has(e.p)&&!e.d); if(!files.length) return toast('Selecione arquivos (não pastas) no painel da esquerda',true);
+  for(const e of files){ try{ await uploadLocal(e.p,fm.path); }catch(er){ toast(er.message,true); } }
+}
+function fmDownload(){
+  if(!lfm.path) return toast('Abra uma pasta neste dispositivo (painel da esquerda) para receber os arquivos',true);
+  const files=fm.entries.filter(e=>selR.has(e.p)&&!e.d); if(!files.length) return toast('Selecione arquivos (não pastas) no painel da direita',true);
+  for(const e of files){ const id=++fmId; fmReq.add(id); fmDest.set(id,lfm.path); fmCall('get',{path:e.p},id).then(()=>toast('Baixando '+e.n+'…')).catch(er=>{ fmReq.delete(id); fmDest.delete(id); toast(er.message,true); }); }
+}
+$('fmBtn').onclick=e=>{ e.stopPropagation(); fmViewOn?closeFmView():openFmView(); };
+$('fmView').addEventListener('click',e=>{
+  const nav=e.target.closest('[data-n]'), act=e.target.closest('[data-a]'), row=e.target.closest('.fmrow'), L=!!e.target.closest('[data-side=L]');
+  if(nav){ const n=nav.dataset.n;
+    if(L){ lfmOpen(n==='up'?(lfm.parent||''):n==='home'?'':lfm.path); } else { n==='up'?fmCmd('fm-up'):fmOpen(n==='home'?'':fm.path); } return; }
+  if(act){ const a=act.dataset.a;
+    if(a==='upload') fmUpload(); else if(a==='download') fmDownload(); else if(a==='mkdir') fmCmd('fm-mkdir');
+    else if(a==='del'){ const l=fm.entries.filter(x=>selR.has(x.p)); if(!l.length) toast('Selecione o que excluir no painel da direita',true); else (async()=>{ for(const x of l) await fmCmd('fm-delete',x.p); })(); }
+    return; }
+  if(row){ const sel=L?selL:selR, p=row.dataset.p; if(e.ctrlKey||e.metaKey){ sel.has(p)?sel.delete(p):sel.add(p); } else { sel.clear(); sel.add(p); } renderFmView(); }
+});
+$('fmView').addEventListener('dblclick',e=>{ const row=e.target.closest('.fmrow'); if(!row||row.dataset.d!=='1') return; if(e.target.closest('[data-side=L]')) lfmOpen(row.dataset.p); else fmOpen(row.dataset.p); });
 
 /* ---------- túneis TCP ---------- */
 let tuns=[], tunCtl=null;
@@ -1761,11 +1958,7 @@ async function saveShell(){
 }
 $('shAuto').onchange=saveShell; $('shTray').onchange=saveShell;
 $('quitBtn').onclick=async()=>{ if(await ask('Sair do VeloDesk?','Este computador deixará de ficar acessível até você abrir o app de novo.','Sair',null,'Cancelar')) sh.quit(); };
-if(sh&&sh.win){
-  $('wbar').classList.add('shell');
-  $('wMin').onclick=()=>sh.win.minimize(); $('wMax').onclick=()=>sh.win.toggleMaximize(); $('wClose').onclick=()=>sh.win.close();
-  $('wbar').addEventListener('dblclick',e=>{ if(!e.target.closest('button')) sh.win.toggleMaximize(); });
-} else document.querySelector('.stage').classList.add('nobar');
+document.querySelector('.stage').classList.add('nobar');   // a janela usa a barra de título do sistema
 
 let wsErr='';
 function open(){

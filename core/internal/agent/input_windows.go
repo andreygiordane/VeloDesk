@@ -28,16 +28,17 @@ const (
 	inputMouse    = 0
 	inputKeyboard = 1
 
-	mevMove       = 0x0001
-	mevLeftDown   = 0x0002
-	mevLeftUp     = 0x0004
-	mevRightDown  = 0x0008
-	mevRightUp    = 0x0010
-	mevMiddleDown = 0x0020
-	mevMiddleUp   = 0x0040
-	mevWheel      = 0x0800
-	mevHWheel     = 0x1000
-	mevAbsolute   = 0x8000
+	mevMove        = 0x0001
+	mevLeftDown    = 0x0002
+	mevLeftUp      = 0x0004
+	mevRightDown   = 0x0008
+	mevRightUp     = 0x0010
+	mevMiddleDown  = 0x0020
+	mevMiddleUp    = 0x0040
+	mevWheel       = 0x0800
+	mevHWheel      = 0x1000
+	mevAbsolute    = 0x8000
+	mevVirtualDesk = 0x4000
 
 	kevExtended = 0x0001
 	kevKeyUp    = 0x0002
@@ -108,6 +109,8 @@ var jsCodeToScan = func() map[string]winKey {
 
 type win struct {
 	w, h      int
+	rx, ry    int // monitor escolhido (área virtual); rw=0: monitor principal
+	rw, rh    int
 	mu        sync.Mutex
 	downKeys  map[string]bool
 	downBtns  map[int]bool
@@ -129,7 +132,30 @@ func (in *win) mouse(flags uint32, dx, dy int32, data uint32) {
 	procSendInput.Call(1, uintptr(unsafe.Pointer(&m)), inputSizeNative)
 }
 
+func (in *win) SetRegion(x, y, w, h int) {
+	in.mu.Lock()
+	in.rx, in.ry, in.rw, in.rh = x, y, w, h
+	in.mu.Unlock()
+}
+
 func (in *win) Move(nx, ny float64) {
+	in.mu.Lock()
+	rx, ry, rw, rh := in.rx, in.ry, in.rw, in.rh
+	in.mu.Unlock()
+	if rw > 0 && rh > 0 { // outro monitor: coordenadas absolutas sobre a área de trabalho virtual
+		vx, _, _ := procMetrics.Call(76) // SM_XVIRTUALSCREEN
+		vy, _, _ := procMetrics.Call(77)
+		vw, _, _ := procMetrics.Call(78) // SM_CXVIRTUALSCREEN
+		vh, _, _ := procMetrics.Call(79)
+		if int32(vw) > 1 && int32(vh) > 1 {
+			px := float64(rx) + nx*float64(rw-1)
+			py := float64(ry) + ny*float64(rh-1)
+			ax := (px - float64(int32(vx))) / float64(int32(vw)-1) * 65535
+			ay := (py - float64(int32(vy))) / float64(int32(vh)-1) * 65535
+			in.mouse(mevMove|mevAbsolute|mevVirtualDesk, int32(ax), int32(ay), 0)
+			return
+		}
+	}
 	in.mouse(mevMove|mevAbsolute, int32(nx*65535), int32(ny*65535), 0)
 }
 
