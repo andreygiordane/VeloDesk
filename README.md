@@ -1,8 +1,9 @@
 <div align="center">
 
-# ⚡ VeloDesk
+<img src="docs/img/banner.png" alt="VeloDesk: acesso remoto rápido, seguro e de código aberto" width="100%">
 
-**Acesso remoto rápido, seguro e de código aberto.**
+<br>
+
 Controle de tela e teclado, arquivos, bate-papo, túneis TCP, impressão, gravação e muito mais, com o **seu** servidor, em qualquer lugar.
 
 [![Licença: AGPL v3](https://img.shields.io/badge/licen%C3%A7a-AGPL--3.0-7c3aed.svg)](LICENSE)
@@ -20,9 +21,11 @@ Controle de tela e teclado, arquivos, bate-papo, túneis TCP, impressão, grava�
 ## Sumário
 
 - [O que é](#o-que-é)
+- [A história do projeto](#a-história-do-projeto)
 - [Recursos](#recursos)
 - [Telas](#telas)
 - [Como funciona](#como-funciona)
+- [Stack e termos técnicos](#stack-e-termos-técnicos)
 - [Estrutura do repositório](#estrutura-do-repositório)
 - [Servidor de sinalização (Docker)](#servidor-de-sinalização-docker)
 - [Rodar o aplicativo](#rodar-o-aplicativo)
@@ -45,6 +48,22 @@ O VeloDesk é um programa de acesso remoto no estilo do AnyDesk, que **você mes
    O vídeo, o teclado e os arquivos **não passam por ele**: vão direto entre os dois computadores, criptografados (WebRTC).
 
 Não há conta, nuvem de terceiros nem telemetria. Você sobe o servidor onde quiser e aponta os aplicativos para ele.
+
+## A história do projeto
+
+O VeloDesk nasceu em **março de 2026** como um protótipo de acesso remoto: servidor de sinalização em **Node.js**, captura de tela em **Python** (com um esboço em **Rust**), interface em **Vite + Electron** e deploy em um serviço gratuito na nuvem.
+
+**Cerca de 8 meses depois, o projeto foi retomado e refinado com a ajuda do [Claude](https://claude.com/product/claude-code)** (Claude Code, da Anthropic). O trabalho foi uma reescrita guiada, com revisão e decisões de produto minhas a cada etapa:
+
+| | Protótipo (março) | Agora |
+|---|---|---|
+| **Núcleo** | Node.js + Python (processos separados) | **Go**: um único binário faz app, servidor e ferramentas |
+| **Conexão** | Sinalização simples | **WebRTC** P2P (DTLS/SRTP) com autenticação por prova criptográfica |
+| **Servidor** | Serviço gratuito na nuvem | **Docker** em qualquer lugar: imagem de ~20 MB, sem privilégios, HTTPS automático opcional |
+| **Interface** | Vite + Electron | Janela com barra do sistema, tela de sessão com barra fixa, gerenciador de arquivos em dois painéis, escolha de monitor |
+| **Segurança** | Senha enviada e comparada em texto puro pelo servidor | A senha **nunca trafega**: prova criptográfica (PBKDF2 + HMAC) amarrada à sessão DTLS, perfis de permissão no computador acessado, 2FA (TOTP), lista de IDs, atualizações assinadas (Ed25519) |
+| **Qualidade** | Sem testes automatizados | Testes unitários em Go e **124 verificações ponta a ponta** com dois aplicativos reais |
+| **Licença** | MIT | **AGPL-3.0** |
 
 ## Recursos
 
@@ -125,6 +144,19 @@ flowchart LR
 5. **Quem é acessado manda**: o perfil de permissões é aplicado **nele**, e pode ser alterado ao vivo. Se o controlador pedir algo que não foi permitido, o núcleo do computador acessado recusa.
 
 Quando não há caminho direto (NAT rígido, rede corporativa), configure um servidor TURN em *Configurações › Conexão*. Por padrão só um STUN é usado, e ele é configurável.
+
+## Stack e termos técnicos
+
+<table>
+<tr><td width="170"><b>Tempo real</b></td><td>WebRTC (ICE, STUN/TURN, DTLS-SRTP), canais de dados confiável e sem retransmissão (mouse), sinalização por WebSocket, ajuste de SDP (<code>x-google-start-bitrate</code>) para a imagem já abrir em resolução cheia, <code>replaceTrack</code> para trocar de monitor sem derrubar a sessão</td></tr>
+<tr><td><b>Segurança</b></td><td>PBKDF2-SHA256 (200 mil iterações) + HMAC amarrado à impressão digital DTLS (anti-MITM), TOTP/2FA, perfis de permissão no host, limite de tentativas, segredos no cofre do sistema (<code>safeStorage</code>), atualização assinada com Ed25519, túneis restritos à rede local</td></tr>
+<tr><td><b>Núcleo (Go)</b></td><td>Binário único, <code>go:embed</code> para a interface, injeção de entrada (<code>SendInput</code> no Windows, XTest no X11), coordenadas da área de trabalho virtual para vários monitores, Wake-On-LAN (pacote mágico), descoberta por broadcast UDP, proxy com NTLM/SSPI, túneis TCP sobre canais WebRTC</td></tr>
+<tr><td><b>Interface</b></td><td>Electron 33 (<code>contextBridge</code>, IPC, janelas flutuantes, bandeja, instância única), HTML/CSS/JS sem etapa de build</td></tr>
+<tr><td><b>Infraestrutura</b></td><td>Docker (imagem <i>distroless</i> não-root, sistema de arquivos somente leitura, <code>cap_drop: ALL</code>), Docker Compose, Caddy com TLS automático (Let's Encrypt)</td></tr>
+<tr><td><b>Empacotamento</b></td><td>electron-builder: NSIS (.exe), .deb, .rpm, AppImage e macOS (.zip arm64 e x64), gerados em container; servidor fixo e escondido por variável de build</td></tr>
+<tr><td><b>Qualidade</b></td><td>Testes unitários em Go (criptografia, TOTP, proxy, arquivos, túneis) e teste ponta a ponta que sobe dois Electron reais guiados pelo Chrome DevTools Protocol, em perfis isolados</td></tr>
+<tr><td><b>Código aberto</b></td><td>AGPL-3.0-only, cabeçalhos SPDX em todos os arquivos de código</td></tr>
+</table>
 
 ## Estrutura do repositório
 
