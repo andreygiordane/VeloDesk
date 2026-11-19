@@ -33,6 +33,15 @@ svg{flex:none}
 .disc{padding:13px;border-radius:11px;background:var(--bad);color:#fff;font-size:15px;font-weight:700}
 .disc:hover{filter:brightness(.92)}
 .sesR{min-width:0;min-height:0}
+/* modo compacto: não cobre a tela de quem controla; expande por botão, ou sozinho quando chega mensagem/arquivo */
+body.compact .sesb{grid-template-columns:1fr}
+body.compact .sesR,body.compact .badges,body.compact .sel,body.compact .permt,body.compact #spgrid{display:none}
+body.compact .sesL{border-right:0}
+body.compact .mid{padding:14px 16px 6px}
+body.compact .av{width:48px;height:48px;border-radius:13px}
+body.compact .av svg{width:22px;height:27px}
+body.compact .acts{padding:8px 16px 14px}
+body.compact .disc{padding:10px}
 /* ---- convite ---- */
 .inv{height:100%;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.6)}
 .inv header{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;border-bottom:1px solid var(--line);font-weight:700;-webkit-app-region:drag}
@@ -42,6 +51,7 @@ svg{flex:none}
 .invL{display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0}
 .mid{flex:1;min-height:0;overflow-y:auto;padding:18px 22px 6px;display:flex;flex-direction:column;gap:10px}
 .who{display:flex;gap:14px;align-items:center}
+.av svg{width:28px;height:34px}
 .av{width:62px;height:62px;border-radius:16px;background:linear-gradient(135deg,#9b4dff,#5b12aa);display:grid;place-items:center;font-size:28px;font-weight:700;color:#fff;flex:none}
 .who b{display:block;font-size:17px;color:#7dd99b}
 .who span{color:var(--muted)}
@@ -80,15 +90,16 @@ select option{background:var(--card)}
       <polygon points="563,427 765,427 648,640 835,636 478,995 585,745 404,750" fill="#fff"/>
       <polygon points="655,427 765,427 648,640 522,693" fill="#d9c2ff"/><polygon points="835,636 700,693 478,995" fill="#d9c2ff"/>
       <polygon points="742,526 683,622 724,601 855,613" fill="#d9c2ff"/><polygon points="385,778 553,768 502,866 515,791" fill="#d9c2ff"/></svg></symbol>
+  <symbol id="bolt" viewBox="385 427 470 568"><polygon points="563,427 765,427 648,640 835,636 478,995 585,745 404,750" fill="#fff"/></symbol>
 </defs></svg>
 
 <div class="mark" id="mark" hidden><span class="dot"></span><span id="txt"></span></div>
 
 <div class="ses" id="ses" hidden>
-  <header><svg width="22" height="22"><use href="#app"/></svg><span>VeloDesk · Sessão remota</span><span class="grow"></span><button id="smin" title="Minimizar">–</button><button id="sx" title="Fechar a janela (a sessão continua)">✕</button></header>
+  <header><svg width="22" height="22"><use href="#app"/></svg><span>VeloDesk · Sessão remota</span><span class="grow"></span><button id="sexp" title="Expandir (permissões, bate-papo e arquivos)">⤢</button><button id="smin" title="Minimizar">–</button><button id="sx" title="Fechar a janela (a sessão continua)">✕</button></header>
   <div class="sesb">
     <div class="sesL"><div class="mid">
-      <div class="who"><div class="av" id="sav">?</div><div class="wt"><b id="sname"></b><span id="sid"></span><span id="stime">Conectado 00:00:00</span></div></div>
+      <div class="who"><div class="av" id="sav"><svg><use href="#bolt"/></svg></div><div class="wt"><b id="sname"></b><span id="sid"></span><span id="stime">Conectado 00:00:00</span></div></div>
       <div class="badges"><span class="bd ok" id="smeth"></span></div>
       <label class="sel"><span>Perfil</span><select id="sprof"></select></label>
       <div class="permt">Permissões</div>
@@ -104,7 +115,7 @@ select option{background:var(--card)}
   <header><svg width="24" height="24"><use href="#app"/></svg><span>VeloDesk · Pedido de conexão</span><button class="x" id="ix" title="Rejeitar">✕</button></header>
   <div class="invb">
     <div class="invL"><div class="mid">
-      <div class="who"><div class="av" id="iav">?</div><div><b id="iname"></b><span id="iid"></span></div></div>
+      <div class="who"><div class="av" id="iav"><svg><use href="#bolt"/></svg></div><div><b id="iname"></b><span id="iid"></span></div></div>
       <p>deseja se conectar ao seu PC.</p>
       <div class="badges"><span class="bd ok" id="imeth"></span><span class="bd ok" id="i2fa" hidden>Verificação em duas etapas ✓</span></div>
       <div class="permt">Permissões</div>
@@ -147,7 +158,7 @@ function renderMark() {
 function renderSession() {
   $('ses').hidden = false;
   const name = st.name || '—';
-  $('sav').textContent = name.trim()[0].toUpperCase(); $('sname').textContent = name; $('sid').textContent = st.idFmt ? '(' + st.idFmt + ')' : '';
+  $('sname').textContent = name; $('sid').textContent = st.idFmt ? '(' + st.idFmt + ')' : '';
   $('smeth').textContent = '🔒 ' + (METH[st.how] || 'Verificado');
   clearInterval(tick);
   if (st.since) { const t = () => ($('stime').textContent = 'Conectado ' + hms(Date.now() - st.since)); t(); tick = setInterval(t, 1000); }
@@ -171,7 +182,6 @@ const METH = { temp: 'Senha temporária', fixed: 'Senha fixa', token: 'Acesso sa
 function renderInvite() {
   if (!inv) return;
   $('inv').hidden = false;
-  $('iav').textContent = (inv.name || '?').trim()[0].toUpperCase();
   $('iname').textContent = inv.name; $('iid').textContent = ' (' + inv.idFmt + ')';
   $('imeth').textContent = '🔒 ' + (METH[inv.how] || 'Verificado');
   $('i2fa').hidden = !inv.tfa;
@@ -190,13 +200,29 @@ $('reject').onclick = $('ix').onclick = () => cmd('invite-reject');
 
 bc.onmessage = (e) => {
   const m = e.data || {};
-  if (m.type === 'state' && mode !== 'invite') { st = m; mode === 'mark' ? renderMark() : renderSession(); }
+  if (m.type === 'state' && mode !== 'invite') { st = m; mode === 'mark' ? renderMark() : renderSession(); if (mode === 'session') autoExpand(); }
   if (m.type === 'invite' && mode === 'invite') { inv = m.inv; renderInvite(); }
 };
 $('sprof').onchange = () => cmd('prof-set', $('sprof').value);
 $('spgrid').onclick = (e) => { const b = e.target.closest('.pbtn'); if (b) cmd('perm-toggle', { key: b.dataset.k, val: !b.classList.contains('on') }); };
 $('sdisc').onclick = () => cmd('end');
 $('smin').onclick = () => cmd('session-min');
+// tamanho da janela da sessão: começa compacta (canto da tela) e só ocupa espaço se você pedir
+let compact = true, lastLog = -1, lastOffers = '';
+const applySize = () => {
+  document.body.classList.toggle('compact', compact);
+  $('sexp').textContent = compact ? '⤢' : '⤡'; $('sexp').title = compact ? 'Expandir (permissões, bate-papo e arquivos)' : 'Recolher para o canto';
+  cmd('session-size', compact ? 'compact' : 'full');
+};
+if (mode === 'session') document.body.classList.add('compact');
+$('sexp').onclick = () => { compact = !compact; applySize(); };
+const autoExpand = () => {   // chegou mensagem ou pedido de arquivo: abre para a pessoa ver
+  const lg = st.log || [], incoming = lg.length && !lg[lg.length - 1].me;
+  const offers = (st.files || []).filter((x) => x.state === 'offer').map((x) => x.uid).join(',');
+  if (lastLog < 0) lastLog = lg.length;
+  if (compact && ((lg.length > lastLog && incoming) || (offers && offers !== lastOffers))) { compact = false; applySize(); }
+  lastLog = lg.length; lastOffers = offers;
+};
 $('sx').onclick = () => cmd('chat-close');
 window.addEventListener('pagehide', () => { if (mode === 'invite' && inv) cmd('invite-reject'); });   // fechar a janela = rejeitar
 bc.postMessage({ type: 'hello' });

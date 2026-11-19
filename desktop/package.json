@@ -1,7 +1,7 @@
 {
   "name": "velodesk",
   "productName": "VeloDesk",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "VeloDesk: acesso remoto rápido e seguro (código aberto, AGPL-3.0)",
   "author": "Andrey Costa",
   "private": true,

@@ -645,6 +645,29 @@ async function test(name, fn) { if (process.env.ONLY && !process.env.ONLY.split(
     await endSession();
   });
 
+  await test('T29 janela da sessão compacta, sem cobrir a tela de quem controla', async () => {
+    await sessionAs('padrao'); await sleep(2500);
+    const ses = await pageOf(A, /m=session/);
+    const geo = async () => JSON.parse(await evalIn(ses, `JSON.stringify({w:outerWidth,h:outerHeight,y:screenY,top:screenY,ah:screen.availHeight,compact:document.body.classList.contains('compact'),
+      grid:document.querySelector('#spgrid').offsetParent!==null,disc:document.querySelector('#sdisc').offsetParent!==null,
+      avText:document.getElementById('sav').textContent.trim(),avSvg:!!document.querySelector('#sav svg use[href="#bolt"]')})`));
+    let g = await geo();
+    log(g.compact && g.w <= 420 && g.h <= 260 && g.y > g.ah / 2, 'T29a a janela da sessão abre compacta e na parte de baixo da tela (não cobre a barra do topo)', JSON.stringify({ w: g.w, h: g.h, y: g.y, alturaUtil: g.ah }));
+    log(!g.grid && g.disc, 'T29b no modo compacto só aparecem o nome, o tempo e o botão Desconectar');
+    log(g.avText === '' && g.avSvg, 'T29c o avatar mostra o raio do VeloDesk e não a primeira letra/número', JSON.stringify({ texto: g.avText, raio: g.avSvg }));
+    await evalIn(ses, `document.getElementById('sexp').click(); 0`); await sleep(900);
+    g = await geo();
+    log(!g.compact && g.w >= 840 && g.grid, 'T29d o botão expandir mostra permissões, bate-papo e arquivos', g.w + 'x' + g.h);
+    await evalIn(ses, `document.getElementById('sexp').click(); 0`); await sleep(900);
+    g = await geo();
+    log(g.compact && g.w <= 420, 'T29e recolher volta para o canto');
+    await B.ev(`toggleChat(true); chatSend('Preciso da sua ajuda aqui'); 0`); await sleep(2500);
+    g = await geo();
+    log(!g.compact && g.w >= 840, 'T29f mensagem nova do controlador expande a janela sozinha para o host ver');
+    await evalIn(ses, `document.getElementById('sdisc').click(); 0`);
+    await until(A, '!pc', 8000, 'host sem sessão'); await until(B, '!pc', 8000, 'controlador sem sessão');
+  });
+
   await test('T15 canal de atualização', async () => {
     await A.ev(`setPref('updateMode','off'); 0`); await sleep(600);
     await A.ev(`fetch('/api/update?do=check',{method:'POST'}); 0`); await sleep(1500);

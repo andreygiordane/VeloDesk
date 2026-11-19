@@ -1393,6 +1393,7 @@ if(bc) bc.onmessage=e=>{
     else if(m.cmd==='perm-toggle') hostPerm(m.arg.key,m.arg.val);
     else if(m.cmd==='prof-set') hostProfile(m.arg);
     else if(m.cmd==='session-min'){ if(sh&&sh.overlay&&sh.overlay.min) sh.overlay.min(); }
+    else if(m.cmd==='session-size'){ if(sh&&sh.overlay&&sh.overlay.size) sh.overlay.size(m.arg); }
     else panelCmd(m.cmd,m.arg);
   }
 };

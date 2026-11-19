@@ -51,7 +51,7 @@ Não há conta, nuvem de terceiros nem telemetria. Você sobe o servidor onde qu
 | Área | O que tem |
 |---|---|
 | **Controle remoto** | Tela, mouse e teclado com baixa latência, 60 quadros por segundo, qualidade que já começa alta, só o cursor do computador remoto |
-| **Quem é acessado** | Janela de aceite com permissões ajustáveis por pedido, marca d'água discreta no canto, janela da sessão com bate-papo e botão **Desconectar** |
+| **Quem é acessado** | Janela de aceite com permissões ajustáveis por pedido, marca d'água discreta no canto, janela da sessão compacta (não cobre a tela de quem controla) que expande com bate-papo, arquivos e permissões ao vivo, e botão **Desconectar** |
 | **Acesso sem supervisão** | Senha fixa forte, entrada sem confirmação, acesso salvo revogável, senhas de curto prazo para reconectar após reinício |
 | **Segurança** | Prova de senha por PBKDF2 + HMAC ligada à sessão DTLS, 2FA (TOTP), lista de IDs permitidos, bloqueio por tentativas, perfis de permissão |
 | **Arquivos e texto** | Envio e recebimento com aceite, gerenciador de arquivos remoto, área de transferência |
@@ -64,7 +64,7 @@ Não há conta, nuvem de terceiros nem telemetria. Você sobe o servidor onde qu
 <table>
   <tr>
     <td width="50%"><img src="docs/img/invite.png" alt="Janela de aceite do pedido de conexão"><br><sub><b>Pedido de conexão</b>: quem aceita vê quem é, como entrou e escolhe as permissões.</sub></td>
-    <td width="50%"><img src="docs/img/session.png" alt="Janela da sessão remota com bate-papo"><br><sub><b>Sessão ativa</b>: permissões ao vivo, bate-papo, arquivos e <b>Desconectar</b>.</sub></td>
+    <td width="50%"><img src="docs/img/session.png" alt="Janela da sessão remota expandida, com bate-papo"><br><sub><b>Sessão ativa (expandida)</b>: permissões ao vivo, bate-papo, arquivos e <b>Desconectar</b>.</sub></td>
   </tr>
   <tr>
     <td><img src="docs/img/settings-access.png" alt="Configurações de acesso"><br><sub><b>Acesso</b>: confirmação, senha fixa, 2FA e lista de IDs.</sub></td>
@@ -76,9 +76,13 @@ Não há conta, nuvem de terceiros nem telemetria. Você sobe o servidor onde qu
   </tr>
 </table>
 
-Durante uma sessão, o computador acessado mostra só uma marca discreta no canto da tela:
+Durante uma sessão, o computador acessado mostra uma marca discreta no canto da tela e uma **janela compacta** (nome, tempo e **Desconectar**) no canto inferior direito, para **não cobrir a tela de quem está controlando**. Ela expande sozinha quando chega uma mensagem ou um pedido de arquivo, ou pelo botão ⤢:
 
-<div align="center"><img src="docs/img/watermark.png" alt="Marca d'água de sessão remota ativa" width="420"></div>
+<div align="center">
+  <img src="docs/img/session-compact.png" alt="Janela compacta da sessão" width="300">
+  &nbsp;&nbsp;
+  <img src="docs/img/watermark.png" alt="Marca d'água de sessão remota ativa" width="420">
+</div>
 
 > As imagens usam um perfil de demonstração, com dispositivos e IDs fictícios.
 

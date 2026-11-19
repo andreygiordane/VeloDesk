@@ -100,10 +100,17 @@ function mkMark() {
   return o;
 }
 // Janela da sessão (perfil, permissões ao vivo, chat, arquivos e Desconectar): janela comum, pode ser minimizada.
+// Começa compacta no canto inferior direito (acima da marca d'água) para não cobrir a tela de quem controla; "full" mostra tudo.
+function sessionBounds(kind) {
+  const { workArea } = screen.getPrimaryDisplay();
+  const w = kind === 'full' ? 860 : 400, h = kind === 'full' ? 620 : 238;
+  return kind === 'full'
+    ? { width: w, height: h, x: Math.round(workArea.x + workArea.width - w - 48), y: Math.round(workArea.y + (workArea.height - h) / 2) }
+    : { width: w, height: h, x: Math.round(workArea.x + workArea.width - w - 16), y: Math.round(workArea.y + workArea.height - h - 46) };
+}
 function mkSession() {
-  const { workArea } = screen.getPrimaryDisplay(); const w = 860, h = 620;
   const o = new BrowserWindow({
-    width: w, height: h, x: Math.round(workArea.x + workArea.width - w - 48), y: Math.round(workArea.y + (workArea.height - h) / 2),
+    ...sessionBounds('compact'),
     frame: false, transparent: true, resizable: false, show: false, hasShadow: false, title: 'VeloDesk · Sessão remota', icon: ICON_PATH, webPreferences: wprefs(),
   });
   hardenOverlay(o, 'session');
@@ -117,6 +124,7 @@ ipcMain.handle('overlay:session', (_e, on) => {
   else if (sesWin) sesWin.close();
 });
 ipcMain.handle('overlay:min', () => { if (sesWin) sesWin.minimize(); });
+ipcMain.handle('overlay:size', (_e, kind) => { if (sesWin) sesWin.setBounds(sessionBounds(kind === 'full' ? 'full' : 'compact')); });
 // Janela de aceite de convite: aparece no centro da tela, sempre por cima, mesmo com o app minimizado na bandeja.
 let invWin = null;
 function mkInvite() {
