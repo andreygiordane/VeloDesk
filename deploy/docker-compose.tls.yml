@@ -1,0 +1,29 @@
+# Acrescenta HTTPS automático (Caddy + Let's Encrypt) na frente do servidor e fecha a porta 21116 para fora.
+# Use junto do docker-compose.yml da raiz:
+#   DOMAIN=remoto.exemplo.com docker compose -f docker-compose.yml -f deploy/docker-compose.tls.yml up -d --build
+# Requisitos: o domínio apontando para este servidor e a porta 443/tcp liberada.
+services:
+  velodesk:
+    ports: !reset []              # só o Caddy fica exposto
+    expose: ["21116"]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [velodesk]
+    ports:
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?defina DOMAIN=seu.dominio}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 128m
+
+volumes:
+  caddy_data:
+  caddy_config:

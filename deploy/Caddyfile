@@ -1,0 +1,15 @@
+{
+	# só HTTPS; o certificado é pedido pela porta 443 (TLS-ALPN), então a porta 80 não precisa ficar aberta
+	servers {
+		protocols h1 h2
+	}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+	}
+	reverse_proxy velodesk:21116
+}

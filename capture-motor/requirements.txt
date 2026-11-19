@@ -1,8 +1,0 @@
-aiortc
-av
-mss
-pyautogui
-numpy
-opencv-python
-python-socketio
-aiohttp

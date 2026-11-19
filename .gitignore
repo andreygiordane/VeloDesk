@@ -1,32 +1,16 @@
-# Node.js
+# dependências e saídas de build
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# Python
-venv/
-.venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Electron / Build
-dist/
-out/
-build/
-release/
-
-# IDE / OS
-.vscode/
-.idea/
-.DS_Store
-*.swp
-
-# App Specific
-velodesk_config.json
+desktop/dist/
+desktop/resources/
+core/velodesk
+core/velodesk.exe
+instaladores/
+# dados locais e segredos (nunca versionar)
+updates/
+*.key
+update.key
+.env
+.env.*
 *.log
-client-ui/resources/*.exe
-dist-installer/
+.DS_Store
+Thumbs.db

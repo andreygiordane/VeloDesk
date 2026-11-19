@@ -1,0 +1,22 @@
+# Servidor de sinalização do VeloDesk.
+#   docker compose up -d --build
+# Os apps se conectam em ws://IP_DO_SERVIDOR:21116. Para a internet use o HTTPS automático (veja o README):
+#   DOMAIN=remoto.exemplo.com docker compose -f docker-compose.yml -f deploy/docker-compose.tls.yml up -d --build
+name: velodesk
+
+services:
+  velodesk:
+    build: .
+    image: velodesk-server:latest
+    restart: unless-stopped
+    ports:
+      - "${VELODESK_PORT:-21116}:21116"
+    command: ["-addr", ":21116", "-updates", "/updates"]
+    volumes:
+      # Builds assinados gerados por `velodesk publish` (opcional; a pasta pode ficar vazia).
+      - ./updates:/updates:ro
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 128m
+    pids_limit: 256

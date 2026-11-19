@@ -1,0 +1,205 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>VeloDesk</title>
+<!-- Janelas flutuantes do computador controlado: m=mark (marca discreta de sessão ativa), m=session (janela da sessão)
+     e m=invite (pedido de conexão). Falam com a janela principal pelo BroadcastChannel; não acessam o sistema. -->
+<style>
+:root{--card:#14121c;--card2:#1c1928;--soft:#1c1928;--ink:#f1eff7;--muted:#9a95ad;--line:#2d2942;--accent:#8b3dff;--bad:#f0524f;--ok:#2dd36f}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:transparent;font:13px/1.4 "Segoe UI",system-ui,sans-serif;color:var(--ink);overflow:hidden;user-select:none}
+button{font:inherit;border:0;cursor:pointer;color:inherit;-webkit-app-region:no-drag}
+svg{flex:none}
+[hidden]{display:none!important}
+/* ---- marca de sessão remota (discreta, no canto, não bloqueia cliques) ---- */
+.mark{position:absolute;right:0;bottom:0;display:inline-flex;align-items:center;gap:9px;padding:5px 14px 5px 12px;background:rgba(8,8,14,.66);color:#fff;font-size:15px;font-weight:500;text-shadow:0 1px 2px rgba(0,0,0,.8);border-radius:8px 0 0 0;white-space:nowrap}
+.mark .dot{width:8px;height:8px;border-radius:50%;background:var(--bad);animation:b 1.2s infinite}
+.mark.ended .dot{background:var(--ok);animation:none}
+@keyframes b{50%{opacity:.35}}
+/* ---- janela da sessão (perfil, permissões, chat e arquivos, Desconectar) ---- */
+.ses{height:100%;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.6)}
+.ses header{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-bottom:1px solid var(--line);font-weight:700;-webkit-app-region:drag}
+.ses header .grow{flex:1}
+.ses header button{width:34px;height:28px;border-radius:7px;background:transparent;color:var(--muted)}
+.ses header button:hover{background:var(--card2);color:var(--ink)}
+.sesb{flex:1;min-height:0;display:grid;grid-template-columns:350px 1fr}
+.sesL{display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0}
+.sesL .wt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sesL .wt b{font-size:16px;color:#7dd99b}
+.sesL .wt span{color:var(--muted)}
+.sesL .grow{flex:1}
+.disc{padding:13px;border-radius:11px;background:var(--bad);color:#fff;font-size:15px;font-weight:700}
+.disc:hover{filter:brightness(.92)}
+.sesR{min-width:0;min-height:0}
+/* ---- convite ---- */
+.inv{height:100%;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.6)}
+.inv header{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;border-bottom:1px solid var(--line);font-weight:700;-webkit-app-region:drag}
+.inv header .x{margin-left:auto;width:30px;height:30px;border-radius:8px;background:transparent;color:var(--muted);font-size:15px}
+.inv header .x:hover{background:var(--card2);color:var(--ink)}
+.invb{flex:1;min-height:0;display:grid;grid-template-columns:360px 1fr}
+.invL{display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0}
+.mid{flex:1;min-height:0;overflow-y:auto;padding:18px 22px 6px;display:flex;flex-direction:column;gap:10px}
+.who{display:flex;gap:14px;align-items:center}
+.av{width:62px;height:62px;border-radius:16px;background:linear-gradient(135deg,#9b4dff,#5b12aa);display:grid;place-items:center;font-size:28px;font-weight:700;color:#fff;flex:none}
+.who b{display:block;font-size:17px;color:#7dd99b}
+.who span{color:var(--muted)}
+.invL p{color:var(--muted);font-size:14px}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.bd{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--card2);color:var(--muted);font-size:12px;font-weight:600}
+.bd.ok{background:rgba(45,211,111,.14);color:var(--ok)}
+.sel{display:flex;flex-direction:column;gap:5px;margin-top:2px}
+.sel span,.permt{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+select{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:8px 10px;color:var(--ink);font:inherit;outline:none}
+select option{background:var(--card)}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pbtn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px 7px;border-radius:11px;background:var(--card2);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:600;text-align:center}
+.pbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pbtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.pbtn:hover{border-color:var(--accent)}
+.acts{display:flex;flex-direction:column;gap:8px;padding:12px 22px 18px;border-top:1px solid var(--line);background:var(--card)}
+.acc{padding:13px;border-radius:11px;background:#2f9e4f;color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px}
+.acc:hover{background:#38b45b}
+.acts .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sec2{padding:11px;border-radius:11px;background:var(--card2);border:1px solid var(--line);font-weight:600}
+.sec2:hover{border-color:var(--accent)}
+.rej{padding:11px;border-radius:11px;background:var(--bad);color:#fff;font-weight:700}
+.invR{padding:22px 24px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.invR h3{font-size:15px}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:8px 14px}
+.dl dt{color:var(--muted)}.dl dd{font-weight:600;word-break:break-word}
+.tip{margin-top:auto;padding:12px 14px;border-radius:11px;background:rgba(245,165,36,.12);color:#f5a524;font-size:12.5px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9b4dff"/><stop offset="1" stop-color="#5b12aa"/></linearGradient>
+  <symbol id="app" viewBox="0 0 100 100"><rect width="100" height="100" rx="24" fill="url(#g)"/>
+    <svg x="27" y="19" width="46" height="62" viewBox="385 427 470 568">
+      <polygon points="563,427 765,427 648,640 835,636 478,995 585,745 404,750" fill="#fff"/>
+      <polygon points="655,427 765,427 648,640 522,693" fill="#d9c2ff"/><polygon points="835,636 700,693 478,995" fill="#d9c2ff"/>
+      <polygon points="742,526 683,622 724,601 855,613" fill="#d9c2ff"/><polygon points="385,778 553,768 502,866 515,791" fill="#d9c2ff"/></svg></symbol>
+</defs></svg>
+
+<div class="mark" id="mark" hidden><span class="dot"></span><span id="txt"></span></div>
+
+<div class="ses" id="ses" hidden>
+  <header><svg width="22" height="22"><use href="#app"/></svg><span>VeloDesk · Sessão remota</span><span class="grow"></span><button id="smin" title="Minimizar">–</button><button id="sx" title="Fechar a janela (a sessão continua)">✕</button></header>
+  <div class="sesb">
+    <div class="sesL"><div class="mid">
+      <div class="who"><div class="av" id="sav">?</div><div class="wt"><b id="sname"></b><span id="sid"></span><span id="stime">Conectado 00:00:00</span></div></div>
+      <div class="badges"><span class="bd ok" id="smeth"></span></div>
+      <label class="sel"><span>Perfil</span><select id="sprof"></select></label>
+      <div class="permt">Permissões</div>
+      <div class="pgrid" id="spgrid"></div>
+    </div>
+      <div class="acts"><button class="disc" id="sdisc">Desconectar</button></div>
+    </div>
+    <div class="sesR" id="pbody"></div>
+  </div>
+</div>
+
+<div class="inv" id="inv" hidden>
+  <header><svg width="24" height="24"><use href="#app"/></svg><span>VeloDesk · Pedido de conexão</span><button class="x" id="ix" title="Rejeitar">✕</button></header>
+  <div class="invb">
+    <div class="invL"><div class="mid">
+      <div class="who"><div class="av" id="iav">?</div><div><b id="iname"></b><span id="iid"></span></div></div>
+      <p>deseja se conectar ao seu PC.</p>
+      <div class="badges"><span class="bd ok" id="imeth"></span><span class="bd ok" id="i2fa" hidden>Verificação em duas etapas ✓</span></div>
+      <div class="permt">Permissões</div>
+      <div class="pgrid" id="pgrid"></div>
+    </div>
+      <div class="acts">
+        <button class="acc" id="accept"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5L16 9.5"/></svg>Aceitar</button>
+        <div class="two"><button class="sec2" id="viewonly">Só ver a tela</button><button class="rej" id="reject">Rejeitar</button></div>
+      </div>
+    </div>
+    <div class="invR">
+      <h3>Detalhes do pedido</h3>
+      <dl class="dl"><dt>ID</dt><dd id="d_id"></dd><dt>Entrou com</dt><dd id="d_how"></dd><dt>Segurança</dt><dd id="d_sec"></dd><dt>Perfil</dt><dd id="d_prof"></dd></dl>
+      <label class="sel" style="margin-top:2px"><span>Perfil de permissão</span><select id="iprof"></select></label>
+
+      <div class="tip">Aceite apenas se você conhece essa pessoa e está esperando esse acesso. Ela poderá ver sua tela e, conforme as permissões, controlá-la.</div>
+    </div>
+  </div>
+</div>
+
+<script src="/panel.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const q = new URLSearchParams(location.search).get('m');
+const mode = q === 'session' ? 'session' : q === 'invite' ? 'invite' : 'mark';
+const bc = new BroadcastChannel('velodesk-ui');
+const cmd = (c, arg, t) => bc.postMessage({ type: 'cmd', cmd: c, arg, t });
+let st = {}, tick, panel, inv = null;
+const mmss = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+
+const hms = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map((n) => String(n).padStart(2, '0')).join(':'); };
+/* ---- marca ---- */
+function renderMark() {
+  $('mark').hidden = false;
+  const ended = !!st.ended;
+  $('mark').classList.toggle('ended', ended);
+  $('txt').textContent = ended ? st.ended.name + ' não está mais acessando este computador' : 'Sessão remota ativa · ' + (st.name || '');
+}
+/* ---- janela da sessão ---- */
+function renderSession() {
+  $('ses').hidden = false;
+  const name = st.name || '—';
+  $('sav').textContent = name.trim()[0].toUpperCase(); $('sname').textContent = name; $('sid').textContent = st.idFmt ? '(' + st.idFmt + ')' : '';
+  $('smeth').textContent = '🔒 ' + (METH[st.how] || 'Verificado');
+  clearInterval(tick);
+  if (st.since) { const t = () => ($('stime').textContent = 'Conectado ' + hms(Date.now() - st.since)); t(); tick = setInterval(t, 1000); }
+  if (document.activeElement !== $('sprof')) {
+    $('sprof').innerHTML = (st.profiles || []).map((p) => `<option value="${p.id}">${String(p.name).replace(/</g, '&lt;')}</option>`).join('') + (st.custom ? '<option value="">Personalizado</option>' : '');
+    $('sprof').value = st.custom ? '' : (st.profId || '');
+  }
+  $('spgrid').innerHTML = Object.keys(IC).map((k) => `<button class="pbtn ${st.perms && st.perms[k] ? 'on' : ''}" data-k="${k}" title="${LBL[k]}"><svg viewBox="0 0 24 24">${IC[k]}</svg>${LBL[k]}</button>`).join('');
+  if (!panel) panel = VDPanel($('pbody'), { state: () => st, cmd: (c, a) => (c === 'chat-send' ? cmd(c, null, a) : cmd(c, a)) });
+  panel.render();
+}
+/* ---- convite ---- */
+const IC = {
+  control: '<path d="M5 3l14 7-6 2-2 6z"/>', clipboard: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9z"/>',
+  files: '<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/>', sysinfo: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>', restart: '<path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"/>',
+  logoff: '<path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/>', filemgr: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>', filewrite: '<path d="M4 20h4L19 9a2.8 2.8 0 00-4-4L4 16z"/>', print: '<path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z"/>', tunnels: '<path d="M3 12h5M16 12h5"/><circle cx="12" cy="12" r="3"/>', record: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
+};
+const LBL = { control: 'Mouse e teclado', clipboard: 'Área de transf.', files: 'Arquivos', sysinfo: 'Info do sistema', lock: 'Bloquear tela', restart: 'Reiniciar', logoff: 'Encerrar sessão', record: 'Gravar', filemgr: 'Gerenc. de arquivos', filewrite: 'Alterar arquivos', print: 'Impressão', tunnels: 'Túneis TCP' };
+const METH = { temp: 'Senha temporária', fixed: 'Senha fixa', token: 'Acesso salvo' };
+function renderInvite() {
+  if (!inv) return;
+  $('inv').hidden = false;
+  $('iav').textContent = (inv.name || '?').trim()[0].toUpperCase();
+  $('iname').textContent = inv.name; $('iid').textContent = ' (' + inv.idFmt + ')';
+  $('imeth').textContent = '🔒 ' + (METH[inv.how] || 'Verificado');
+  $('i2fa').hidden = !inv.tfa;
+  $('iprof').innerHTML = inv.profiles.map((p) => `<option value="${p.id}">${p.name.replace(/</g, '&lt;')}</option>`).join('');
+  $('iprof').value = inv.profId;
+  $('pgrid').innerHTML = Object.keys(IC).map((k) => `<button class="pbtn ${inv.perms[k] ? 'on' : ''}" data-k="${k}" title="${LBL[k]}"><svg viewBox="0 0 24 24">${IC[k]}</svg>${LBL[k]}</button>`).join('');
+  $('d_id').textContent = inv.idFmt; $('d_how').textContent = METH[inv.how] || '—';
+  $('d_sec').textContent = inv.tfa ? 'Senha + verificação em duas etapas' : 'Senha verificada (criptografia ponta a ponta)';
+  $('d_prof').textContent = (inv.profiles.find((p) => p.id === inv.profId) || {}).name || '—';
+}
+$('iprof').onchange = () => { const p = inv.profiles.find((x) => x.id === $('iprof').value); inv.profId = p.id; inv.perms = { ...p.perms }; renderInvite(); };
+$('pgrid').onclick = (e) => { const b = e.target.closest('.pbtn'); if (b) { inv.perms[b.dataset.k] = !inv.perms[b.dataset.k]; renderInvite(); } };
+$('accept').onclick = () => cmd('invite-accept', { profId: inv.profId, perms: inv.perms });
+$('viewonly').onclick = () => cmd('invite-accept', { profId: inv.profId, perms: Object.fromEntries(Object.keys(IC).map((k) => [k, false])) });
+$('reject').onclick = $('ix').onclick = () => cmd('invite-reject');
+
+bc.onmessage = (e) => {
+  const m = e.data || {};
+  if (m.type === 'state' && mode !== 'invite') { st = m; mode === 'mark' ? renderMark() : renderSession(); }
+  if (m.type === 'invite' && mode === 'invite') { inv = m.inv; renderInvite(); }
+};
+$('sprof').onchange = () => cmd('prof-set', $('sprof').value);
+$('spgrid').onclick = (e) => { const b = e.target.closest('.pbtn'); if (b) cmd('perm-toggle', { key: b.dataset.k, val: !b.classList.contains('on') }); };
+$('sdisc').onclick = () => cmd('end');
+$('smin').onclick = () => cmd('session-min');
+$('sx').onclick = () => cmd('chat-close');
+window.addEventListener('pagehide', () => { if (mode === 'invite' && inv) cmd('invite-reject'); });   // fechar a janela = rejeitar
+bc.postMessage({ type: 'hello' });
+</script>
+</body>
+</html>

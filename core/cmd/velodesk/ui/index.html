@@ -1,0 +1,1791 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VeloDesk</title>
+<style>
+/* Limpo e funcional: uma cor de destaque (o roxo do raio), superfícies planas, pouco ruído. */
+:root{
+  --bg:#0b0a10; --side:#0e0d14; --card:#14121c; --card2:#191724; --ink:#f1eff7; --muted:#8e89a3; --line:#242131; --soft:#1a1825;
+  --accent:#8b3dff; --accent-h:#9d58ff; --accent-soft:rgba(139,61,255,.13); --accent-ink:#fff;
+  --ok:#2dd36f; --ok-soft:rgba(45,211,111,.14); --warn:#f5a524; --warn-soft:rgba(245,165,36,.14); --bad:#f0524f; --bad-soft:rgba(240,82,79,.13);
+  --radius:14px; --font:"Segoe UI",Inter,system-ui,-apple-system,Roboto,sans-serif;
+}
+:root[data-theme=light]{
+  --bg:#f6f5fa; --side:#ffffff; --card:#ffffff; --card2:#faf9fd; --ink:#17132a; --muted:#6c6784; --line:#e8e4f1; --soft:#f2eff9;
+  --accent:#7a22d6; --accent-h:#6a18c4; --accent-soft:rgba(122,34,214,.09);
+  --ok:#15803d; --ok-soft:rgba(21,128,61,.12); --warn:#b45309; --warn-soft:rgba(180,83,9,.12); --bad:#dc2626; --bad-soft:rgba(220,38,38,.1);
+}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--font);-webkit-font-smoothing:antialiased;overflow:hidden}
+svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.shell{display:grid;grid-template-columns:212px 1fr;height:100vh}
+/* ---- menu lateral ---- */
+aside{background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 12px 14px;gap:2px}
+.brand{display:flex;gap:11px;align-items:center;padding:4px 10px 22px;font-weight:700;font-size:18px;letter-spacing:-.01em}
+.appico{width:34px;height:34px;flex:none}
+.nav{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:10px;background:transparent;color:var(--muted);font-weight:600;font-size:14px;justify-content:flex-start;border:0;text-align:left}
+.nav svg{width:19px;height:19px}
+.nav:hover{color:var(--ink);background:var(--soft)}
+.nav.on{color:var(--accent-h);background:var(--accent-soft)}
+.grow{flex:1}
+
+/* ---- palco ---- */
+.stage{display:grid;grid-template-rows:auto 1fr auto;min-width:0;min-height:0;overflow:hidden;background:var(--bg)}
+.wbar{display:none;align-items:center;justify-content:flex-end;height:40px;-webkit-app-region:drag;margin:0 -28px 8px;padding-right:10px}
+.wbar.shell{display:flex}
+.wbar .wc{display:flex;-webkit-app-region:no-drag}
+.wbar button{width:44px;height:32px;padding:0;border-radius:8px;background:transparent;color:var(--muted);border:0}
+.wbar button svg{width:15px;height:15px;stroke-width:1.6}
+.wbar button:hover{background:var(--soft);color:var(--ink)}
+.wbar button.x:hover{background:#e5334b;color:#fff}
+.top{padding:6px 28px 4px 28px}
+.stage.nobar .top{padding-top:20px}
+.addr{max-width:1000px;margin:0 auto;display:flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:5px 5px 5px 16px;transition:border-color .15s,box-shadow .15s}
+.addr:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.addr>svg{color:var(--muted);margin-right:12px}
+.addr input{background:transparent!important;border:0!important;box-shadow:none!important;padding:11px 4px;font-size:15.5px}
+.addr .pwi{max-width:170px;border-left:1px solid var(--line)!important;border-radius:0!important;padding-left:16px;letter-spacing:.16em}
+.addr button{margin-left:8px;height:38px;padding:0 20px;border-radius:9px}
+main{overflow-y:scroll;padding:22px 28px 28px}
+main::-webkit-scrollbar{width:10px}
+main::-webkit-scrollbar-track{background:transparent}
+main::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+.view{display:none;max-width:1000px;margin:0 auto}
+.view.on{display:block}
+.foot{display:flex;align-items:center;gap:10px;padding:10px 28px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.foot .ok{color:var(--ink)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--warn);flex:none}
+.dot.on{background:var(--ok)}
+
+/* ---- primitivos ---- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px}
+.sub{color:var(--muted);font-size:13px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+input[type=text],input[type=password],input[type=number],select,textarea{width:100%;min-width:0;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 13px;font:inherit;color:var(--ink);outline:none;transition:border-color .15s,box-shadow .15s}
+textarea{resize:vertical;min-height:84px;font-family:ui-monospace,Consolas,monospace;font-size:13px}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:.7}
+select option{background:var(--card);color:var(--ink)}
+button{border:1px solid transparent;border-radius:10px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;background:var(--accent);color:var(--accent-ink);display:inline-flex;gap:8px;align-items:center;justify-content:center;transition:background .15s,transform .08s,border-color .15s}
+button:hover{background:var(--accent-h)} button:active{transform:scale(.98)}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+button.ghost:hover{background:var(--soft);border-color:var(--muted)}
+button.danger{background:var(--bad);color:#fff} button.danger:hover{background:var(--bad);filter:brightness(.92)}
+button.sm{padding:6px 12px;font-size:13px;border-radius:8px}
+button.icon{padding:0;width:32px;height:32px;border-radius:8px;background:transparent;color:var(--muted);border:0}
+button.icon:hover{background:var(--soft);color:var(--ink)}
+button.icon.on{color:#fbbf24} button.icon.on svg{fill:currentColor}
+button:disabled{opacity:.45;cursor:not-allowed}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--soft);color:var(--muted)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.rec{background:var(--bad-soft);color:var(--bad)}
+.chip i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin:28px 0 12px}
+.sec-h h2{font-size:15px;font-weight:700}
+.link{background:transparent;color:var(--muted);padding:2px 4px;font-size:13px;border-radius:6px}
+.link:hover{background:transparent;color:var(--accent-h)}
+.page-h h1{font-size:22px;letter-spacing:-.02em}.page-h p{color:var(--muted);margin-top:2px}
+.seg{display:inline-flex;background:var(--soft);border-radius:10px;padding:3px;gap:2px}
+.seg button{background:transparent;color:var(--muted);padding:6px 14px;border-radius:8px;font-size:13px}
+.seg button:hover{color:var(--ink);background:transparent}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.25)}
+
+/* ---- início ---- */
+.hero{display:flex;align-items:center;gap:28px;flex-wrap:wrap;padding:24px 28px}
+.hero .hid{flex:1;min-width:260px}
+.lab{display:block;color:var(--muted);font-size:13px;font-weight:500;margin-bottom:4px}
+.myid{font-size:clamp(30px,3.4vw,42px);white-space:nowrap;font-weight:700;letter-spacing:.03em;font-variant-numeric:tabular-nums;line-height:1.15;display:flex;align-items:center;gap:8px}
+.hpw{min-width:190px}
+.pwr{display:flex;align-items:center;gap:2px}
+.pw{font-size:24px;font-weight:700;letter-spacing:.14em;font-variant-numeric:tabular-nums}
+.hst{display:flex;align-items:center;gap:9px;font-weight:600;padding-left:28px;border-left:1px solid var(--line);align-self:stretch}
+.grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(236px,1fr));gap:12px}
+.dcard{position:relative;display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 14px 14px 16px;cursor:pointer;transition:border-color .15s,background .15s}
+.dcard:hover{border-color:var(--accent);background:var(--card2)}
+.av{width:42px;height:42px;border-radius:12px;background:var(--accent-soft);color:var(--accent-h);display:grid;place-items:center;flex:none;font-weight:700;font-size:17px}
+.av svg{width:20px;height:20px}
+.t{flex:1;min-width:0}
+.t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t .sub{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dact{display:flex;align-items:center}
+.dact .hov{display:none}
+.dcard:hover .dact .hov{display:inline-flex}
+.empty{grid-column:1/-1;padding:30px 20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--radius)}
+.empty b{display:block;color:var(--ink);margin-bottom:2px}
+.search{max-width:240px}
+.hr{height:1px;background:var(--line);margin:4px 0}
+
+/* ---- aviso de acesso remoto (no computador controlado) ---- */
+.live{max-width:1000px;margin:0 auto 10px;display:flex;align-items:center;gap:12px;padding:9px 12px 9px 16px;border-radius:12px;background:var(--bad-soft);border:1px solid color-mix(in srgb,var(--bad) 45%,transparent);font-weight:600}
+.live .dot{background:var(--bad);animation:blink 1.2s infinite}
+.live .meta{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:500}
+.live .grow{flex:1}
+.live.ended{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
+.live.ended .dot{background:var(--ok);animation:none}
+.badge{position:relative}
+.udot{position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:var(--bad);border:2px solid var(--card)}
+/* ---- chat ---- */
+.chatp{position:fixed;right:16px;bottom:16px;width:430px;height:560px;max-height:calc(100vh - 32px);background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.55);display:flex;flex-direction:column;z-index:25;overflow:hidden}
+.chatp[hidden]{display:none}
+.chatp header{display:flex;align-items:center;justify-content:space-between;padding:10px 10px 10px 16px;border-bottom:1px solid var(--line);font-weight:700}
+.clog{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.clog .none{margin:auto;color:var(--muted);text-align:center;font-size:13px}
+.msg{max-width:82%;padding:8px 11px;border-radius:12px;background:var(--soft);align-self:flex-start;word-break:break-word;white-space:pre-wrap}
+.msg.me{align-self:flex-end;background:var(--accent);color:#fff}
+.msg small{display:block;opacity:.65;font-size:11px;margin-top:2px}
+.chatp form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}
+/* ---- tela principal ---- */
+.desk{display:flex;align-items:center;gap:28px;flex-wrap:wrap;padding:20px 26px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:var(--radius)}
+.deskL{flex:1;min-width:280px}
+.deskT{display:block;font-size:19px;font-weight:600;color:var(--accent-h)}
+.idrow{display:flex;align-items:center;gap:6px;margin:8px 0 4px;font-size:clamp(28px,3.2vw,38px);font-weight:700;letter-spacing:.03em;font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1.15}
+.sech{display:flex;align-items:center;gap:12px;margin:26px 0 10px;font-size:12px;font-weight:700;letter-spacing:.07em;color:var(--muted);text-transform:uppercase}
+.sech .grow{flex:1}
+.sech .link{text-transform:none;letter-spacing:0;font-weight:500}
+.vm{display:flex;gap:2px}
+.vm button{padding:0;width:28px;height:28px;background:transparent;color:var(--muted);border-radius:7px}
+.vm button.on{color:var(--accent-h);background:var(--accent-soft)}
+.vm svg{width:16px;height:16px}
+.strip{display:flex;gap:10px;flex-wrap:wrap}
+.sc{position:relative;display:flex;align-items:center;gap:10px;width:250px;padding:6px 4px 6px 6px;background:var(--card);border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.sc:hover{border-color:var(--accent)}
+.sc.off{opacity:.55;cursor:not-allowed}
+.sc .th{width:44px;height:44px;border-radius:8px;flex:none;position:relative;display:grid;place-items:center;overflow:hidden;color:rgba(255,255,255,.7)}
+.sc .th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.sc .th svg{width:22px;height:22px}
+.sc .t b{font-size:13.5px}
+.tiles{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.tiles.small{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tiles.list{grid-template-columns:1fr;gap:6px}
+.tile{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.tile:hover{border-color:var(--accent)}
+.tile .th{aspect-ratio:16/10;display:grid;place-items:center;position:relative;color:rgba(255,255,255,.55);overflow:hidden}
+.tile .th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tile .th svg{width:44px;height:44px;stroke-width:1.4}
+.tile .ft{display:flex;align-items:center;padding:6px 4px 6px 12px;gap:4px}
+.tile .ft .t{flex:1;min-width:0}
+.tile .ft .t b{font-size:14px}
+.tiles.small .tile .th svg{width:30px;height:30px}
+.tiles.list .tile{display:flex;align-items:center}
+.tiles.list .tile .th{width:76px;aspect-ratio:auto;height:48px;flex:none}
+.tiles.list .tile .th svg{width:24px;height:24px}
+.tiles.list .tile .ft{flex:1}
+.sd{position:absolute;top:7px;left:7px;width:12px;height:12px;border-radius:50%;border:2px solid rgba(0,0,0,.4);background:#6b7280;z-index:1}
+.sd.on{background:var(--ok)}.sd.off{background:var(--bad)}
+.stb{position:absolute;top:2px;right:2px;z-index:1;background:rgba(0,0,0,.25)!important;color:#fff!important}
+.stb.on{color:#fbbf24!important}
+.tiles.list .stb{position:static;background:transparent!important;color:var(--muted)!important}
+.pop{position:fixed;z-index:60;min-width:180px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:5px;box-shadow:0 12px 36px rgba(0,0,0,.5)}
+.pop button{width:100%;justify-content:flex-start;background:transparent;color:var(--ink);font-weight:500;padding:8px 12px;border-radius:8px}
+.pop button:hover{background:var(--soft)}
+.pop button.dg{color:var(--bad)}
+/* ---- gravações ---- */
+.rec-item{display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.rec-item:last-child{border:0}
+
+/* ---- interruptores ---- */
+.switch{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:8px 0;cursor:pointer}
+.switch .ot b{display:block;font-weight:600}
+.switch small,.field small,.hint{color:var(--muted);font-weight:400;font-size:12.5px;line-height:1.4}
+.tg{position:relative;width:38px;height:22px;flex:none}
+.tg input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:1;width:100%;height:100%;margin:0}
+.tg span{position:absolute;inset:0;border-radius:999px;background:var(--line);transition:.2s}
+.tg span::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.tg input:checked+span{background:var(--accent)}
+.tg input:checked+span::after{transform:translateX(16px)}
+.rad{display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer;font-weight:500}
+.rad input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>span{font-size:13px;font-weight:600}
+
+/* ---- configurações ---- */
+.set{display:grid;grid-template-columns:190px 1fr;gap:30px;align-items:start}
+.stage.in-set .addr{display:none}
+.stage.in-set .top{padding-bottom:0}
+.tabs{position:sticky;top:0;display:flex;flex-direction:column;gap:2px}
+.tabs h3{padding:2px 12px 14px;font-size:22px;letter-spacing:-.02em}
+.tab{background:transparent;color:var(--muted);justify-content:flex-start;padding:9px 12px;border-radius:8px;font-weight:600;border:0}
+.tab:hover{background:var(--soft);color:var(--ink)}
+.tab.on{background:var(--accent-soft);color:var(--accent-h)}
+.panes{min-width:0;padding-bottom:30px}
+.pane{display:none;flex-direction:column;gap:20px}.pane.on{display:flex}
+.pane h4{font-size:18px;letter-spacing:-.01em}
+.grp{display:flex;flex-direction:column;gap:6px}
+.grp>h5{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.grp>.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 16px;display:flex;flex-direction:column}
+.grp>.box>.switch,.grp>.box>.rad,.grp>.box>.field{border-bottom:1px solid var(--line)}
+.grp>.box>*:last-child{border-bottom:0}
+.grp>.box>.field,.grp>.box>.line{padding:11px 0}
+.line{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grp .sub2{padding:0 0 8px 0}
+.only-shell{display:none}
+.profs{display:flex;gap:6px;flex-wrap:wrap;padding:11px 0}
+.profs button{background:var(--soft);color:var(--muted);border:1px solid transparent;padding:6px 12px;font-size:13px;border-radius:8px}
+.profs button.on{background:var(--accent-soft);color:var(--accent-h);border-color:var(--accent)}
+.profs button.add{background:transparent;border:1px dashed var(--line)}
+
+/* ---- sessão ---- */
+#viewer{position:fixed;inset:0;background:#05040a;display:none;z-index:20}
+#viewer.show{display:block}
+#viewer video{width:100%;height:100%;object-fit:contain;cursor:none;outline:none}
+.bar{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:12px;padding:5px 6px 5px 14px;display:flex;gap:10px;align-items:center;color:var(--ink);box-shadow:0 8px 30px rgba(0,0,0,.5);transition:opacity .25s,transform .25s;max-width:calc(100vw - 24px)}
+.bar.hide{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(-8px)}
+.bar .sep{width:1px;height:22px;background:var(--line)}
+.bar .meta{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;white-space:nowrap}
+.bar .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.q{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.q i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.q.g i{background:var(--ok)} .q.y i{background:var(--warn)} .q.r i{background:var(--bad)}
+#recBtn.rec{color:var(--bad)} #recBtn.rec svg{fill:var(--bad);animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.35}}
+.menuwrap{position:relative}
+.menu{position:absolute;right:0;top:40px;min-width:230px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 12px 36px rgba(0,0,0,.5);z-index:3}
+.menu button{width:100%;justify-content:flex-start;background:transparent;color:var(--ink);border-radius:8px;font-weight:500;padding:9px 12px}
+.menu button:hover{background:var(--soft)}
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:#cbc6dc;text-align:center;pointer-events:none}
+.loading svg.appico{width:64px;height:64px;margin:0 auto 16px;display:block;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.08);opacity:.75}}
+
+/* ---- modal + toast ---- */
+.scrim{position:fixed;inset:0;background:rgba(5,4,10,.62);backdrop-filter:blur(4px);display:none;place-items:center;z-index:30;padding:20px}
+.scrim.show{display:grid}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.modal h3{font-size:18px;letter-spacing:-.01em}
+.modal p{color:var(--muted);white-space:pre-line}
+.warnbox{display:flex;gap:10px;padding:11px 13px;border-radius:10px;font-size:13px;line-height:1.45}
+.warnbox svg{margin-top:1px}
+.warnbox.bad{background:var(--bad-soft);color:var(--bad)} .warnbox.warn{background:var(--warn-soft);color:var(--warn)}
+.pwrow{display:flex;gap:6px;align-items:center}
+.tfa-qr{display:grid;place-items:center;background:#fff;border-radius:12px;padding:12px;width:fit-content;margin:0 auto}
+.tfa-qr img{width:176px;height:176px;image-rendering:pixelated}
+.keybox{font-family:ui-monospace,Consolas,monospace;font-size:13px;letter-spacing:.08em;background:var(--soft);padding:8px 12px;border-radius:8px;word-break:break-all;text-align:center}
+#toasts{position:fixed;right:20px;bottom:52px;display:flex;flex-direction:column;gap:10px;z-index:40}
+.toast{background:var(--card2);color:var(--ink);border:1px solid var(--line);border-left:3px solid var(--accent);padding:10px 15px;border-radius:10px;font-size:14px;animation:in .2s;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:360px}
+.toast.err{border-left-color:var(--bad)}
+@keyframes in{from{opacity:0;transform:translateY(8px)}}
+
+/* ---- responsivo ---- */
+@media (max-width:760px){
+  body{overflow:auto}
+  .shell{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:auto;min-height:100vh}
+  aside{flex-direction:row;align-items:center;padding:8px;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}
+  .brand{padding:0 10px 0 6px}.brand span{display:none}
+  .nav{width:auto;padding:10px 12px}.nav .nl{display:none}
+  .stage{overflow:visible}main{overflow:visible}
+  .hst{border-left:0;padding-left:0}
+  .addr{flex-wrap:wrap;padding:8px}.addr .pwi{max-width:none;border-left:0!important;padding-left:4px}
+  .set{grid-template-columns:1fr}.tabs{position:static;flex-direction:row;overflow-x:auto}.tabs h3{display:none}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="appg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9b4dff"/><stop offset="1" stop-color="#5b12aa"/></linearGradient>
+  <!-- Ícone do app: o raio da marca dentro de um quadrado de cantos arredondados -->
+  <symbol id="i-app" viewBox="0 0 100 100">
+    <rect width="100" height="100" rx="24" fill="url(#appg)" stroke="none"/>
+    <svg x="27" y="19" width="46" height="62" viewBox="385 427 470 568">
+      <polygon points="563,427 765,427 648,640 835,636 478,995 585,745 404,750" fill="#ffffff" stroke="none"/>
+      <polygon points="655,427 765,427 648,640 522,693" fill="#d9c2ff" stroke="none"/>
+      <polygon points="835,636 700,693 478,995" fill="#d9c2ff" stroke="none"/>
+      <polygon points="742,526 683,622 724,601 855,613" fill="#d9c2ff" stroke="none"/>
+      <polygon points="385,778 553,768 502,866 515,791" fill="#d9c2ff" stroke="none"/>
+    </svg>
+  </symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2.5"/><path d="M8 20h8M12 16v4"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></symbol>
+  <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 00-4-4L4 16z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 01-11.6 7.1L4 20l1.1-4.6A8 8 0 1121 12z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+</defs></svg>
+
+<div class="shell">
+  <aside>
+    <div class="brand"><svg class="appico"><use href="#i-app"/></svg><span>VeloDesk</span></div>
+    <button class="nav on" data-view="home"><svg><use href="#i-home"/></svg><span class="nl">Início</span></button>
+    <button class="nav" data-view="devices"><svg><use href="#i-monitor"/></svg><span class="nl">Dispositivos</span></button>
+    <button class="nav" data-view="recs"><svg><use href="#i-rec"/></svg><span class="nl">Gravações</span></button>
+    <span class="grow"></span>
+    <button class="nav" data-view="settings" id="setBtn"><svg><use href="#i-gear"/></svg><span class="nl">Configurações</span></button>
+  </aside>
+
+  <div class="stage">
+    <div class="top">
+      <div class="wbar" id="wbar"><div class="wc">
+        <button id="wMin" title="Minimizar"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+        <button id="wMax" title="Maximizar"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+        <button id="wClose" class="x" title="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div></div>
+      <div class="live" id="live" hidden>
+        <span class="dot"></span><span id="liveTxt"></span><span class="meta" id="liveT"></span><span class="grow"></span>
+        <span id="liveBtns" class="row" style="gap:8px"><button class="ghost sm badge" onclick="toggleChat()">Chat<i class="udot" id="liveDot" hidden></i></button><button class="danger sm" onclick="hangup()">Encerrar acesso</button></span>
+      </div>
+      <div class="addr">
+        <svg><use href="#i-monitor"/></svg>
+        <input type="text" id="target" placeholder="ID do dispositivo remoto" inputmode="numeric" maxlength="11" autocomplete="off">
+        <input type="password" class="pwi" id="tpw" placeholder="Senha" maxlength="12" autocomplete="off">
+        <button onclick="connect()"><svg><use href="#i-arrow"/></svg>Conectar</button>
+      </div>
+    </div>
+
+    <main>
+      <!-- Início -->
+      <section class="view on" id="view-home">
+        <div class="desk">
+          <div class="deskL">
+            <span class="deskT">Este dispositivo</span>
+            <span class="sub">Compartilhe o ID e a senha para receber acesso a este computador.</span>
+            <div class="idrow"><span id="myid">··· ··· ···</span><button class="icon" onclick="copyId()" title="Copiar ID"><svg><use href="#i-copy"/></svg></button></div>
+            <button class="link" onclick="copyInvite()" style="padding:0">↗ Convidar… (copiar as instruções)</button>
+          </div>
+          <div class="hpw"><span class="lab">Senha temporária</span>
+            <div class="pwr"><span class="pw" id="pw">······</span>
+              <button class="icon" onclick="copyPw()" title="Copiar senha"><svg><use href="#i-copy"/></svg></button>
+              <button class="icon" onclick="newPw(true)" title="Gerar nova senha"><svg><use href="#i-refresh"/></svg></button>
+            </div>
+          </div>
+          <div class="hst"><span class="dot" id="hdot"></span><span id="hst">Conectando…</span></div>
+        </div>
+        <div id="favWrap" hidden><div class="sech"><span>Favoritos</span><button class="link" onclick="setFilter('fav');showView('devices')">Mostrar todos</button></div><div class="strip" id="homeFavs"></div></div>
+        <div class="sech"><span>Sessões recentes</span><button class="link" onclick="setFilter('all');showView('devices')">Mostrar todos</button><span class="grow"></span><div class="vm" data-vm></div></div>
+        <div class="tiles" id="homeRecent"></div>
+        <div id="foundWrap" hidden><div class="sech"><span>Encontrados na rede local</span></div><div class="strip" id="homeFound"></div></div>
+      </section>
+
+      <!-- Dispositivos -->
+      <section class="view" id="view-devices">
+        <div class="row" style="justify-content:space-between;align-items:flex-end">
+          <div class="page-h"><h1>Dispositivos</h1><p>Dê nomes e favorite quem você atende.</p></div>
+          <div class="row"><div class="seg" id="devSeg"><button class="on" data-f="all">Todos</button><button data-f="fav">Favoritos</button></div>
+          <input type="text" class="search" id="devSearch" placeholder="Buscar" autocomplete="off"><div class="vm" data-vm></div></div>
+        </div>
+        <div class="tiles" id="listDevs" style="margin-top:18px"></div>
+      </section>
+
+      <!-- Gravações -->
+      <section class="view" id="view-recs">
+        <div class="row" style="justify-content:space-between;align-items:flex-end">
+          <div class="page-h"><h1>Gravações</h1><p id="recDirTxt">Sessões gravadas neste computador.</p></div>
+          <button class="ghost sm" onclick="api('/api/rec/open',{})">Abrir pasta</button>
+        </div>
+        <div class="card" style="margin-top:18px;padding:8px 20px" id="recList"></div>
+      </section>
+            <!-- Configurações -->
+      <section class="view" id="view-settings"><div class="set">
+  <nav class="tabs"><h3>Configurações</h3>
+    <button class="tab on" data-tab="net">Conexão</button>
+    <button class="tab" data-tab="acc">Acesso</button>
+    <button class="tab" data-tab="perm">Permissões</button>
+    <button class="tab" data-tab="rec">Gravação</button>
+    <button class="tab" data-tab="vid">Vídeo</button>
+    <button class="tab" data-tab="gen">Geral</button>
+    <span style="flex:1"></span><button class="ghost sm" onclick="showView('home')">← Voltar</button>
+  </nav>
+  <div class="panes">
+
+    <!-- CONEXÃO -->
+    <section class="pane on" id="pane-net">
+      <h4>Conexão</h4>
+      <div class="grp" id="grpServer"><h5>Servidor</h5><div class="box">
+        <div class="field"><span>Endereço do servidor VeloDesk</span><input type="text" id="cfgServer" placeholder="remoto.meudominio.com ou 192.168.1.20:21116" autocomplete="off"><small>O mesmo em todas as suas máquinas. Salva ao sair do campo.</small></div>
+        <label class="switch"><span class="ot"><b>Aceitar certificado não confiável</b><small>Só para testes em rede local</small></span><span class="tg"><input type="checkbox" id="cfgInsecure"><span></span></span></label>
+      </div></div>
+      <div class="grp"><h5>Descoberta de dispositivos</h5><div class="box">
+        <label class="switch"><span class="ot"><b>Pesquisar na rede local por outros usuários VeloDesk</b><small>Mostra na tela inicial os computadores da sua rede</small></span><span class="tg"><input type="checkbox" data-pref="discScan"><span></span></span></label>
+        <label class="switch"><span class="ot"><b>Excluir este dispositivo da descoberta</b><small>Os outros não veem este computador na rede (ele continua acessível pelo ID)</small></span><span class="tg"><input type="checkbox" data-pref="discHide"><span></span></span></label>
+      </div></div>
+      <div class="grp"><h5>Wake-On-LAN</h5><div class="box">
+        <label class="rad"><input type="radio" name="wolMode" data-pref="wolMode" value="off">Desabilitado</label>
+        <label class="rad"><input type="radio" name="wolMode" data-pref="wolMode" value="on">Ativado (qualquer computador conhecido pode pedir)</label>
+        <label class="rad"><input type="radio" name="wolMode" data-pref="wolMode" value="list">Ativado, mas só atende pedidos destes IDs</label>
+        <div class="field" data-if="wolMode=list"><textarea data-pref="wolList" placeholder="Um ID por linha (máx. 25)&#10;123456789"></textarea></div>
+      </div><span class="hint">Este computador anuncia o endereço da placa de rede (MAC) para quem já se conectou a ele e, quando ligado, acorda outros computadores da mesma rede a pedido. O computador que dorme precisa ter Wake-On-LAN ligado na BIOS e na placa de rede.</span></div>
+      <div class="grp"><h5>Caminho até o outro computador</h5><div class="box">
+        <label class="switch"><span class="ot"><b>Permitir conexões diretas (P2P)</b><small>Desligado: tudo passa pelo servidor TURN e seu IP fica oculto. Exige TURN configurado.</small></span><span class="tg"><input type="checkbox" data-pref="allowP2P"><span></span></span></label>
+        <div class="field"><span>Servidor STUN</span><input type="text" data-pref="stun" placeholder="stun:stun.l.google.com:19302" autocomplete="off"></div>
+        <div class="field"><span>Servidor TURN (relay)</span><input type="text" data-pref="turnUrl" placeholder="turn:meuservidor.com:3478" autocomplete="off">
+          <div class="line"><input type="text" data-pref="turnUser" placeholder="Usuário" autocomplete="off" style="flex:1"><input type="password" data-pref="turnPass" placeholder="Senha" autocomplete="off" style="flex:1"></div></div>
+      </div></div>
+      <div class="grp"><h5>Proxy HTTP</h5><div class="box">
+        <label class="rad"><input type="radio" name="proxyMode" data-pref="proxyMode" value="never">Nunca usar proxy</label>
+        <label class="rad"><input type="radio" name="proxyMode" data-pref="proxyMode" value="auto">Detectar automaticamente</label>
+        <label class="rad"><input type="radio" name="proxyMode" data-pref="proxyMode" value="custom">Usar um proxy específico</label>
+        <div class="field" data-if="proxyMode=custom">
+          <div class="line"><select data-pref="proxyType" style="width:120px"><option value="http">HTTP</option><option value="https">HTTPS</option><option value="socks5">SOCKS5</option></select>
+            <input type="text" data-pref="proxyHost" placeholder="Servidor proxy" autocomplete="off" style="flex:1"><input type="text" data-pref="proxyPort" data-num placeholder="Porta" autocomplete="off" style="width:90px"></div>
+        </div>
+        <label class="rad"><input type="radio" name="proxyAuth" data-pref="proxyAuth" value="none">Desabilitar autenticação</label>
+        <label class="rad"><input type="radio" name="proxyAuth" data-pref="proxyAuth" value="windows">Usar autenticação do Windows (apenas NTLM)</label>
+        <label class="rad"><input type="radio" name="proxyAuth" data-pref="proxyAuth" value="user">Configurar usuário e senha</label>
+        <div class="field" data-if="proxyAuth=user"><div class="line"><input type="text" data-pref="proxyUser" placeholder="Usuário (DOMÍNIO\usuário)" autocomplete="off" style="flex:1"><input type="password" data-pref="proxyPass" placeholder="Senha" autocomplete="off" style="flex:1"></div></div>
+        <label class="switch" data-if="proxyMode=custom"><span class="ot"><b>Desabilitar conexões diretas com o servidor</b><small>Se o proxy falhar, não tenta sem ele</small></span><span class="tg"><input type="checkbox" data-pref="noDirect"><span></span></span></label>
+      </div><span class="hint">Vale para a sinalização e as atualizações. Vídeo e controle não passam pelo proxy. Autenticação NTLM não é suportada.</span></div>
+    </section>
+
+    <!-- ACESSO -->
+    <section class="pane" id="pane-acc">
+      <h4>Acesso</h4>
+      <div class="grp"><h5>Acesso interativo (alguém pede para entrar)</h5><div class="box">
+        <label class="rad"><input type="radio" name="accessMode" data-pref="accessMode" value="always">Sempre exibir solicitações de sessão</label>
+        <label class="rad"><input type="radio" name="accessMode" data-pref="accessMode" value="window">Exibir só se a janela do VeloDesk estiver aberta</label>
+        <label class="rad"><input type="radio" name="accessMode" data-pref="accessMode" value="never">Nunca exibir (só aceita acesso sem supervisão)</label>
+        <label class="switch"><span class="ot"><b>Aceitar sem perguntar (qualquer senha)</b><small>Não recomendado: quem souber a senha temporária entra direto</small></span><span class="tg"><input type="checkbox" data-pref="auto"><span></span></span></label>
+      </div></div>
+      <div class="grp"><h5>Acesso sem supervisão</h5><div class="box">
+        <div class="field"><div class="line"><button class="sm" id="pwSet">Configurar senha</button><button class="ghost sm" id="pwDel">Remover senha</button></div><small id="fpwSt">Nenhuma senha definida.</small></div>
+        <label class="switch"><span class="ot"><b>Entrar sem confirmação com a senha fixa</b><small>Não pergunta "Aceitar?" ao usar a senha fixa</small></span><span class="tg"><input type="checkbox" data-pref="unattended"><span></span></span></label>
+        <label class="switch"><span class="ot"><b>Outros usuários podem salvar os dados de acesso</b><small>O parceiro não precisa digitar a senha na próxima vez (revogável abaixo)</small></span><span class="tg"><input type="checkbox" data-pref="allowSave"><span></span></span></label>
+        <div class="field"><div class="line"><button class="ghost sm" id="tokBtn">Excluir dados de acesso salvos</button></div></div>
+        <label class="switch"><span class="ot"><b>Permitir senhas de curto prazo</b><small>Reconecta sozinho após um reinício remoto (vale 15 min, uso único)</small></span><span class="tg"><input type="checkbox" data-pref="allowShortTerm"><span></span></span></label>
+      </div></div>
+      <div class="grp"><h5>Autenticação de dois fatores (2FA)</h5><div class="box">
+        <div class="field"><div class="line"><button class="sm" id="tfaBtn">Ativar</button><span class="sub" id="tfaSt"></span></div></div>
+        <label class="switch" data-if="tfa"><span class="ot"><b>Exigir com a senha fixa</b></span><span class="tg"><input type="checkbox" data-pref="tfaFixed"><span></span></span></label>
+        <label class="switch" data-if="tfa"><span class="ot"><b>Exigir com a senha temporária</b></span><span class="tg"><input type="checkbox" data-pref="tfaTemp"><span></span></span></label>
+        <label class="switch" data-if="tfa"><span class="ot"><b>Exigir também com acesso salvo</b></span><span class="tg"><input type="checkbox" data-pref="tfaSaved"><span></span></span></label>
+      </div></div>
+      <div class="grp"><h5>Lista de controle de acesso</h5><div class="box">
+        <label class="switch"><span class="ot"><b>Restringir o acesso a estes IDs</b><small>Só os IDs da lista conseguem pedir conexão</small></span><span class="tg"><input type="checkbox" data-pref="aclOn"><span></span></span></label>
+        <div class="field" data-if="aclOn"><textarea data-pref="acl" placeholder="Um ID por linha&#10;123456789&#10;555*  (curinga)"></textarea><small>Aceita curingas: * (vários dígitos) e ? (um dígito).</small></div>
+      </div></div>
+      <div class="grp"><h5>Sessão</h5><div class="box">
+        <label class="switch"><span class="ot"><b>Encerrar sessões recebidas por inatividade</b></span><span class="tg"><input type="checkbox" data-pref="autoDisc"><span></span></span></label>
+        <div class="field" data-if="autoDisc"><span>Tempo limite (minutos)</span><input type="text" data-pref="autoDiscMin" data-num style="width:100px"></div>
+        <label class="switch"><span class="ot"><b>Gerar nova senha temporária após cada sessão</b></span><span class="tg"><input type="checkbox" data-pref="rotateTemp"><span></span></span></label>
+      </div></div>
+      <div class="grp"><h5>Atualizações</h5><div class="box">
+        <label class="rad"><input type="radio" name="updateMode" data-pref="updateMode" value="off">Desativar (não recomendado)</label>
+        <label class="rad"><input type="radio" name="updateMode" data-pref="updateMode" value="stable">Canal estável (recomendado)</label>
+        <label class="rad"><input type="radio" name="updateMode" data-pref="updateMode" value="beta">Versão beta</label>
+        <div class="field"><small id="updSt">Verificando…</small><div class="line"><button class="ghost sm" onclick="checkUpdate()">Verificar agora</button></div></div>
+      </div></div>
+    </section>
+
+    <!-- PERMISSÕES -->
+    <section class="pane" id="pane-perm">
+      <h4>Permissões</h4>
+      <div class="grp"><h5>Quando eu me conecto a outros computadores</h5><div class="box">
+        <label class="switch"><span class="ot"><b>Sincronizar a área de transferência (texto)</b></span><span class="tg"><input type="checkbox" data-pref="syncClip"><span></span></span></label>
+        <label class="switch"><span class="ot"><b>Bloquear o computador remoto ao encerrar</b><small>Se o perfil permitir bloquear a tela</small></span><span class="tg"><input type="checkbox" data-pref="lockOnEnd"><span></span></span></label>
+        <label class="switch" id="rememberRow"><span class="ot"><b>Lembrar o acesso dos computadores</b><small>Guarda um token seguro (não a senha) para entrar sem digitar a senha</small></span><span class="tg"><input type="checkbox" data-pref="rememberAccess"><span></span></span></label>
+      </div></div>
+      <div class="grp"><h5>Arquivos recebidos</h5><div class="box">
+        <div class="field"><span>Salvar em</span><div class="line"><input type="text" id="fileDir" autocomplete="off" style="flex:1"><button class="ghost sm" id="filePick" hidden>Escolher…</button><button class="ghost sm" onclick="api('/api/file/reveal',{name:''})">Abrir</button></div><small>Os arquivos nunca são abertos nem executados sozinhos.</small></div>
+        <div class="field"><span>Tamanho máximo por arquivo (MB)</span><input type="text" data-pref="fileMaxMB" data-num style="width:120px"></div>
+      </div></div>
+      <div class="grp"><h5>Perfis de permissão (quando alguém se conecta a mim)</h5><div class="box">
+        <div class="profs" id="profList"></div>
+        <div id="profPerms"></div>
+        <div class="field"><div class="line"><button class="ghost sm" id="profDel">Remover este perfil</button></div></div>
+        <div class="field"><span>Perfil para pedidos que eu aceito</span><select data-pref="profInteractive" id="selProfI"></select></div>
+        <div class="field"><span>Perfil para acesso sem supervisão</span><select data-pref="profUnattended" id="selProfU"></select></div>
+      </div><span class="hint">As permissões são aplicadas neste computador: o que o perfil não permite é bloqueado, mesmo que o parceiro tente. "Gravar a sessão" depende do aplicativo do parceiro respeitar o aviso.</span></div>
+    </section>
+
+    <!-- GRAVAÇÃO -->
+    <section class="pane" id="pane-rec">
+      <h4>Gravação</h4>
+      <div class="grp"><h5>Recurso</h5><div class="box">
+        <label class="switch"><span class="ot"><b>Ativar a gravação de sessões</b></span><span class="tg"><input type="checkbox" data-pref="recEnable"><span></span></span></label>
+        <label class="switch"><span class="ot"><b>Gravar automaticamente as sessões em que eu controlo outro computador</b></span><span class="tg"><input type="checkbox" data-pref="autoRecOut"><span></span></span></label>
+        <label class="switch"><span class="ot"><b>Gravar automaticamente as sessões recebidas neste computador</b><small>O parceiro vê o aviso "Sessão gravada"</small></span><span class="tg"><input type="checkbox" data-pref="autoRecIn"><span></span></span></label>
+      </div></div>
+      <div class="grp"><h5>Salvar em</h5><div class="box">
+        <div class="field"><div class="line"><input type="text" id="recDir" autocomplete="off" style="flex:1"><button class="ghost sm only-shell-inline" id="recPick" hidden>Escolher…</button><button class="ghost sm" onclick="api('/api/rec/open',{})">Abrir</button></div><small>Use um caminho completo. A pasta é criada se não existir.</small></div>
+      </div></div>
+    </section>
+
+    <!-- VÍDEO -->
+    <section class="pane" id="pane-vid">
+      <h4>Vídeo</h4>
+      <div class="grp"><h5>Quando esta máquina é controlada</h5><div class="box">
+        <div class="field"><span>Prioridade</span><select data-pref="quality"><option value="balanced">Equilibrado</option><option value="fluidez">Fluidez (mais quadros, menos nitidez)</option><option value="nitidez">Nitidez (texto e detalhes, menos quadros)</option></select></div>
+        <div class="field"><span>Quadros por segundo</span><select data-pref="fps" data-num><option value="15">15 fps (economiza banda)</option><option value="30">30 fps</option><option value="60">60 fps</option></select></div>
+        <div class="field"><span>Limite de banda</span><select data-pref="mbps" data-num><option value="0">Automático</option><option value="2">2 Mbps</option><option value="5">5 Mbps</option><option value="10">10 Mbps</option><option value="20">20 Mbps</option></select></div>
+      </div></div>
+      <div class="grp"><h5>Ao controlar outra máquina</h5><div class="box">
+        <label class="switch"><span class="ot"><b>Ocultar a barra da sessão sozinha</b><small>Volta ao passar o mouse no topo</small></span><span class="tg"><input type="checkbox" data-pref="hideBar"><span></span></span></label>
+        <label class="switch"><span class="ot"><b>Mostrar também o cursor deste computador</b><small>Por padrão só aparece o cursor da máquina remota</small></span><span class="tg"><input type="checkbox" data-pref="showLocalCursor"><span></span></span></label>
+      </div></div>
+    </section>
+
+    <!-- GERAL -->
+    <section class="pane" id="pane-gen">
+      <h4>Geral</h4>
+      <div class="grp"><h5>Aparência e histórico</h5><div class="box">
+        <div class="field"><span>Tema</span><select data-pref="theme"><option value="dark">Escuro</option><option value="light">Claro</option></select></div>
+        <label class="switch"><span class="ot"><b>Guardar histórico de conexões</b></span><span class="tg"><input type="checkbox" data-pref="history"><span></span></span></label>
+        <div class="field"><div class="line"><button class="ghost sm" onclick="clearRecent()">Limpar histórico</button></div></div>
+      </div></div>
+      <div class="grp only-shell"><h5>Aplicativo</h5><div class="box">
+        <label class="switch"><span class="ot"><b>Iniciar com o sistema</b><small>Abre minimizado na bandeja</small></span><span class="tg"><input type="checkbox" id="shAuto"><span></span></span></label>
+        <label class="switch"><span class="ot"><b>Manter na bandeja ao fechar a janela</b><small>Esta máquina continua acessível</small></span><span class="tg"><input type="checkbox" id="shTray"><span></span></span></label>
+        <div class="field"><div class="line"><button class="ghost sm" id="quitBtn">Sair do VeloDesk</button></div></div>
+      </div></div>
+      <div class="grp"><h5>Sobre</h5><div class="box"><div class="field"><span class="sub">Seu ID: <b id="aboutId">—</b></span><span class="sub" id="aboutVer"></span></div></div></div>
+    </section>
+  </div>
+</div></section>
+    
+    </main>
+
+    <div class="foot"><span class="dot" id="dot"></span><span class="ok" id="st">Conectando…</span><span id="agSt"></span></div>
+  </div>
+</div>
+
+<div id="viewer">
+  <video id="rv" autoplay playsinline muted tabindex="0"></video>
+  <div class="loading" id="vload"><div><svg class="appico"><use href="#i-app"/></svg><span id="vmsg">Aguardando aceite…</span></div></div>
+  <div class="bar" id="vbar">
+    <span class="dot on" id="vdot" style="display:none"></span>
+    <span class="name" id="vinfo">Conectando…</span>
+    <span class="chip warn" id="vperm" hidden>Somente visualização</span>
+    <span class="chip warn" id="vver" hidden></span>
+    <span class="chip rec" id="vrec" hidden><i></i>Sessão gravada</span>
+    <span class="q" id="vq" style="display:none"><i></i><span id="vlat">— ms</span></span>
+    <span class="meta" id="vbw"></span>
+    <span class="meta" id="vmeta"></span>
+    <span class="sep"></span>
+    <button class="icon" id="fileBtn" title="Enviar ou receber arquivos"><svg><use href="#i-file"/></svg></button>
+    <button class="icon badge" id="chatBtn" title="Chat com o outro computador"><svg><use href="#i-chat"/></svg><i class="udot" id="chatDot" hidden></i></button>
+    <button class="icon" id="recBtn" title="Gravar sessão" hidden><svg><use href="#i-rec"/></svg></button>
+    <div class="menuwrap"><button class="icon" id="actBtn" title="Ações"><svg><use href="#i-more"/></svg></button>
+      <div class="menu" id="amenu" hidden>
+        <button data-a="files" data-p="filemgr">Gerenciador de arquivos…</button>
+        <button data-a="print">Imprimir no computador remoto…</button>
+        <button data-a="tunnels">Túneis TCP…</button>
+        <button data-a="sysinfo">Informações do sistema</button>
+        <button data-a="lock">Bloquear a tela</button>
+        <button data-a="restart">Reiniciar o computador</button>
+        <button data-a="logoff">Encerrar a sessão do usuário</button>
+      </div></div>
+    <button class="icon" onclick="toggleFs()" title="Tela cheia"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <button class="danger sm" onclick="hangup()">Encerrar</button>
+  </div>
+</div>
+
+<!-- chat da sessão -->
+<aside class="chatp" id="chatp" hidden>
+  <header><span id="chatT">Chat</span><button class="icon" id="chatX" title="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <div id="chatPanel" style="flex:1;min-height:0"></div>
+</aside>
+
+<!-- confirmações, avisos e campos de texto -->
+<div class="scrim" id="scrim"><div class="modal">
+  <h3 id="mt"></h3><p id="mp"></p>
+  <input type="text" id="mi" style="display:none" autocomplete="off" maxlength="40">
+  <label class="field" id="mprofw" hidden><span>Permissões desta sessão</span><select id="mprof"></select></label>
+  <div class="row" style="justify-content:flex-end"><button class="ghost" id="mno">Recusar</button><button id="mok">Aceitar</button></div>
+</div></div>
+
+<!-- senha para acesso sem supervisão -->
+<div class="scrim" id="pwdlg"><div class="modal" style="max-width:460px">
+  <h3>Senha para acesso sem supervisão</h3>
+  <div class="warnbox bad"><svg><use href="#i-warn"/></svg><span>Quem tiver essa senha controla este computador <b>sem precisar de confirmação</b>. Não use em computadores de bancos, pagamentos ou dados sensíveis.</span></div>
+  <div class="warnbox warn"><svg><use href="#i-warn"/></svg><span>Mantenha a senha em sigilo e não a compartilhe.</span></div>
+  <label class="field"><span>Senha</span><div class="pwrow"><input type="password" id="pw1" autocomplete="new-password" placeholder="Mínimo 8 caracteres"><button class="icon" type="button" data-eye="pw1"><svg><use href="#i-eye"/></svg></button></div></label>
+  <label class="field"><span>Confirmar senha</span><div class="pwrow"><input type="password" id="pw2" autocomplete="new-password"><button class="icon" type="button" data-eye="pw2"><svg><use href="#i-eye"/></svg></button></div></label>
+  <div class="hint" id="pwHint">Para mais segurança, ative a autenticação de dois fatores e a lista de IDs permitidos em Configurações › Acesso.</div>
+  <div class="row" style="justify-content:flex-end"><button class="ghost" id="pwCancel">Cancelar</button><button id="pwOk">Aplicar</button></div>
+</div></div>
+
+<!-- 2FA -->
+<div class="scrim" id="tfadlg"><div class="modal">
+  <h3>Ativar autenticação de dois fatores</h3>
+  <p>1. Abra um app autenticador (Google Authenticator, Microsoft Authenticator, Aegis…).<br>2. Escaneie o QR code ou digite a chave.<br>3. Digite o código de 6 dígitos que o app mostrar.</p>
+  <div class="tfa-qr"><img id="tfaQr" alt="QR code"></div>
+  <div class="keybox" id="tfaKey"></div>
+  <input type="text" id="tfaCode" inputmode="numeric" maxlength="7" placeholder="000 000" autocomplete="off" style="text-align:center;letter-spacing:.3em;font-size:18px">
+  <div class="row" style="justify-content:flex-end"><button class="ghost" id="tfaCancel">Cancelar</button><button id="tfaOk">Ativar</button></div>
+</div></div>
+
+<!-- túneis TCP -->
+<div class="scrim" id="tundlg"><div class="modal" style="max-width:520px">
+  <h3>Túneis TCP</h3>
+  <p>Abre uma porta neste computador que leva a um endereço da rede do computador remoto (ex.: área de trabalho remota 3389, banco de dados). Só destinos da rede local do outro computador são aceitos.</p>
+  <div class="line"><input type="text" id="tunL" placeholder="Porta local" inputmode="numeric" style="width:110px"><span class="sub">→</span><input type="text" id="tunH" placeholder="Destino (127.0.0.1)" style="flex:1"><input type="text" id="tunP" placeholder="Porta" inputmode="numeric" style="width:90px"></div>
+  <div id="tunList"></div>
+  <div class="row" style="justify-content:flex-end"><button class="ghost" id="tunX">Fechar</button><button id="tunAdd">Adicionar túnel</button></div>
+</div></div>
+
+<!-- impressão remota -->
+<div class="scrim" id="prndlg"><div class="modal">
+  <h3>Imprimir no computador remoto</h3>
+  <p>O documento é enviado e impresso na impressora do outro computador. Só PDF, TXT e imagens (PNG, JPG, BMP, GIF).</p>
+  <label class="field"><span>Documento</span><input type="file" id="prnFile" accept=".pdf,.txt,.png,.jpg,.jpeg,.bmp,.gif"></label>
+  <label class="field"><span>Impressora</span><select id="prnSel"><option value="">Impressora padrão</option></select></label>
+  <div class="row" style="justify-content:flex-end"><button class="ghost" id="prnX">Cancelar</button><button id="prnOk">Imprimir</button></div>
+</div></div>
+
+<!-- player de gravação -->
+<div class="scrim" id="playdlg"><div class="modal" style="max-width:900px">
+  <h3 id="playT"></h3>
+  <video id="playV" controls style="width:100%;max-height:62vh;background:#000;border-radius:10px"></video>
+  <div class="row" style="justify-content:flex-end"><button class="ghost" id="playX">Fechar</button></div>
+</div></div>
+
+<div id="toasts"></div>
+
+<script src="/panel.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const sh = window.velodesk || null;                       // casca desktop (Electron), se houver
+const SERVER = (location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws';
+const fmt = s => s.replace(/(\d{3})(?=\d)/g,'$1 ');
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const store = {
+  get(k,d){ try{return JSON.parse(localStorage.getItem(k))??d}catch{return d} },
+  set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch{} }
+};
+async function api(url,body){                              // JSON para o núcleo local (GET sem corpo, POST com)
+  const o = body===undefined ? {cache:'no-store'} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};
+  const r = await fetch(url,o);
+  if(!r.ok){ const e=new Error((await r.text()).trim()||('HTTP '+r.status)); e.status=r.status; throw e; }
+  return r.json();
+}
+
+async function apiT(url,body){                           // chamadas ao núcleo que exigem o token do agente
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Agent-Token':agentTok},body:JSON.stringify(body||{})});
+  if(!r.ok) throw new Error((await r.text()).trim()||('HTTP '+r.status));
+  return r.json();
+}
+const wsBase=()=>(location.protocol==='https:'?'wss://':'ws://')+location.host;
+
+/* ---------- preferências ---------- */
+const DEF={
+  accessMode:'always',auto:false,unattended:true,allowSave:true,allowShortTerm:false,tfaFixed:true,tfaTemp:true,tfaSaved:false,
+  aclOn:false,acl:'',autoDisc:false,autoDiscMin:10,rotateTemp:false,updateMode:'stable',
+  syncClip:true,lockOnEnd:false,rememberAccess:false,profiles:'',profInteractive:'padrao',profUnattended:'semsup',
+  allowP2P:true,stun:'stun:stun.l.google.com:19302',turnUrl:'',turnUser:'',turnPass:'',
+  proxyMode:'auto',proxyType:'http',proxyHost:'',proxyPort:8080,proxyUser:'',proxyPass:'',proxyAuth:'none',noDirect:false,wolMode:'on',wolList:'',
+  recEnable:true,autoRecOut:false,autoRecIn:false,recDir:'',discScan:true,discHide:false,fileDir:'',fileMaxMB:2048,
+  quality:'balanced',fps:60,mbps:0,hideBar:true,history:true,theme:'dark',showLocalCursor:false,prefsV:3
+};
+let P={...DEF}, saveT, reconT;
+const RT={tfa:false,fixed:false,tokN:0};                  // estado vindo do núcleo
+function applyPrefs(){
+  const d=document.documentElement; if(P.theme==='light') d.dataset.theme='light'; else delete d.dataset.theme;
+  renderProfiles();
+  document.querySelectorAll('[data-pref]').forEach(el=>{
+    const v=P[el.dataset.pref];
+    if(el.type==='checkbox') el.checked=!!v;
+    else if(el.type==='radio') el.checked=String(v)===el.value;
+    else if(document.activeElement!==el) el.value=v==null?'':v;
+  });
+  document.querySelectorAll('[data-if]').forEach(el=>{
+    const [k,val]=el.dataset.if.split('='); const cur=k==='tfa'?RT.tfa:P[k];
+    el.hidden = val===undefined ? !cur : String(cur)!==val;
+  });
+}
+function setPref(k,v){
+  P[k]=v; applyPrefs(); clearTimeout(saveT);
+  saveT=setTimeout(()=>api('/api/prefs',P).catch(()=>toast('Não foi possível salvar as configurações',true)),250);
+}
+async function loadPrefs(){
+  try{ P={...DEF,...await api('/api/prefs')}; if(P.theme==='auto') P.theme='dark';
+    if(!P.prefsV||P.prefsV<3){ if(P.fps===30) P.fps=60; if(P.quality==='fluidez') P.quality='balanced'; P.prefsV=3; api('/api/prefs',P).catch(()=>{}); } }catch{}
+  applyPrefs();
+}
+const NET_KEYS=['proxyMode','proxyHost','proxyPort','proxyType','proxyUser','proxyPass','proxyAuth','noDirect'];
+document.querySelectorAll('[data-pref]').forEach(el=>{
+  const k=el.dataset.pref;
+  el.addEventListener('change',()=>{
+    let v;
+    if(el.type==='checkbox') v=el.checked;
+    else if(el.type==='radio'){ if(!el.checked) return; v=el.value; }
+    else if('num' in el.dataset) v=Number(el.value)||0;
+    else v=el.value.trim();
+    if(k==='allowP2P'&&v===false&&!P.turnUrl){ toast('Configure um servidor TURN antes de desligar as conexões diretas',true); el.checked=true; return; }
+    if(k==='aclOn'&&v&&!P.acl.trim()) toast('Adicione ao menos um ID: com a lista vazia ninguém consegue conectar',true);
+    if(k==='autoDiscMin') v=Math.min(1440,Math.max(1,v||10));
+    setPref(k,v);
+    if(NET_KEYS.includes(k)){ clearTimeout(reconT); reconT=setTimeout(()=>{ if(ws) ws.close(); },900); }   // refaz a conexão com o novo proxy
+  });
+});
+
+/* ---------- interface básica ---------- */
+function toast(m, err){ const t=document.createElement('div'); t.className='toast'+(err?' err':''); t.textContent=m; $('toasts').append(t); setTimeout(()=>t.remove(),4200); }
+// ask(): confirmação. Com `inp` (texto inicial) mostra um campo (valor em $('mi').value); opt.profiles mostra o seletor de perfil.
+function ask(title,text,okLabel='Aceitar',inp,noLabel='Recusar',opt={}){
+  return new Promise(res=>{
+    $('mt').textContent=title; $('mp').textContent=text||''; $('mp').style.display=text?'':'none';
+    $('mok').textContent=okLabel; $('mno').textContent=noLabel; $('mno').style.display=noLabel===''?'none':'';
+    const mi=$('mi'); mi.style.display=inp==null?'none':'';
+    if(inp!=null){ mi.value=inp; mi.inputMode=opt.numeric?'numeric':'text'; mi.maxLength=opt.max||40; mi.style.textAlign=opt.numeric?'center':''; mi.style.letterSpacing=opt.numeric?'.3em':''; setTimeout(()=>{mi.focus();mi.select()},40); }
+    $('mprofw').hidden=!opt.profiles;
+    if(opt.profiles){ $('mprof').innerHTML=profiles().map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join(''); $('mprof').value=opt.profile; }
+    $('scrim').classList.add('show');
+    const done=v=>{$('scrim').classList.remove('show');res(v)};
+    $('mok').onclick=()=>done(true); $('mno').onclick=()=>done(false);
+    mi.onkeydown=e=>{ if(e.key==='Enter') done(true); else if(e.key==='Escape') done(false); };
+  });
+}
+const send = (to,data) => ws && ws.readyState===1 && ws.send(JSON.stringify({t:'signal',to,data}));
+let password='', tempFails=0;
+function newPw(show){
+  const a=new Uint32Array(1); crypto.getRandomValues(a);
+  password=String(a[0]%1000000).padStart(6,'0'); $('pw').textContent=password; if(show) toast('Nova senha gerada');
+}
+const clip = async (t,m)=>{ try{await navigator.clipboard.writeText(t);toast(m)}catch{toast('Não foi possível copiar',true)} };
+const copyId = ()=>clip(myId,'ID copiado'); const copyPw = ()=>clip(password,'Senha copiada');
+
+/* ---------- criptografia (WebCrypto) ---------- */
+const enc=new TextEncoder();
+const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+const unhex=h=>Uint8Array.from(h.match(/../g)||[],x=>parseInt(x,16));
+const rnd=n=>hex(crypto.getRandomValues(new Uint8Array(n)));
+const ctEq=(a,b)=>{ if(typeof a!=='string'||typeof b!=='string'||a.length!==b.length) return false; let r=0; for(let i=0;i<a.length;i++) r|=a.charCodeAt(i)^b.charCodeAt(i); return r===0; };
+async function pbkdf2(pw,saltHex,iters){
+  const k=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:unhex(saltHex),iterations:iters},k,256));
+}
+async function hmac(keyBytes,msg){
+  const k=await crypto.subtle.importKey('raw',keyBytes,{name:'HMAC',hash:'SHA-256'},false,['sign']);
+  return hex(await crypto.subtle.sign('HMAC',k,enc.encode(msg)));
+}
+const fp=sdp=>((/a=fingerprint:\S+ ([0-9A-Fa-f:]+)/.exec(sdp)||[])[1]||'').toLowerCase();
+
+/* ---------- perfis de permissão ---------- */
+const PERMS=[['control','Controlar mouse e teclado'],['restart','Reiniciar o computador'],['lock','Bloquear a tela'],['logoff','Encerrar a sessão do usuário'],['clipboard','Sincronizar a área de transferência'],['files','Transferir arquivos'],['filemgr','Gerenciador de arquivos (ver e baixar)'],['filewrite','Gerenciador: enviar, criar, renomear e excluir'],['print','Impressão remota'],['tunnels','Túneis TCP'],['sysinfo','Ver informações do sistema'],['record','Gravar a sessão']];
+const mkProf=(id,name,on)=>({id,name,perms:Object.fromEntries(PERMS.map(([k])=>[k,on.includes(k)]))});
+const DEFPROFS=[mkProf('padrao','Padrão',['control','lock','clipboard','files','sysinfo']),mkProf('ver','Compartilhamento de tela',[]),
+  mkProf('integral','Acesso integral',PERMS.map(p=>p[0])),mkProf('semsup','Acesso não supervisionado',['control','restart','lock','clipboard','files','filemgr','filewrite','print','sysinfo','record'])];
+function profiles(){ try{ const l=JSON.parse(P.profiles); if(Array.isArray(l)&&l.length) return l; }catch{} return DEFPROFS; }
+const profById=id=>profiles().find(p=>p.id===id)||profiles()[0];
+let profSel='padrao';
+function saveProfiles(l){ setPref('profiles',JSON.stringify(l)); }
+function renderProfiles(){
+  const l=profiles(); if(!l.some(p=>p.id===profSel)) profSel=l[0].id;
+  const box=$('profList'); box.innerHTML='';
+  for(const p of l){ const b=document.createElement('button'); b.textContent=p.name; b.className=p.id===profSel?'on':''; b.onclick=()=>{ profSel=p.id; renderProfiles(); }; box.append(b); }
+  const add=document.createElement('button'); add.textContent='+ Adicionar'; add.className='add'; add.onclick=async()=>{
+    if(!await ask('Novo perfil','Escolha um nome. Ele começa com as permissões do perfil Padrão.','Criar','Novo perfil','Cancelar')) return;
+    const name=$('mi').value.trim()||'Novo perfil', id='c'+Date.now().toString(36);
+    saveProfiles([...profiles(),{id,name,perms:{...profById('padrao').perms}}]); profSel=id; };
+  box.append(add);
+  const cur=profById(profSel);
+  $('profPerms').innerHTML=PERMS.map(([k,t])=>`<label class="switch"><span class="ot"><b>${t}</b></span><span class="tg"><input type="checkbox" data-perm="${k}" ${cur.perms[k]?'checked':''}><span></span></span></label>`).join('');
+  $('profPerms').querySelectorAll('[data-perm]').forEach(el=>el.onchange=()=>{ saveProfiles(profiles().map(p=>p.id===cur.id?{...p,perms:{...p.perms,[el.dataset.perm]:el.checked}}:p)); });
+  $('profDel').hidden=!/^c/.test(profSel);
+  const opts=l.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+  for(const [id,k] of [['selProfI','profInteractive'],['selProfU','profUnattended']]){ $(id).innerHTML=opts; $(id).value=l.some(p=>p.id===P[k])?P[k]:l[0].id; }
+}
+$('profDel').onclick=async()=>{ if(!/^c/.test(profSel)||!await ask('Remover perfil','Remover "'+profById(profSel).name+'"?','Remover',null,'Cancelar')) return;
+  const rest=profiles().filter(p=>p.id!==profSel); profSel=rest[0].id; saveProfiles(rest); };
+
+/* ---------- navegação ---------- */
+function showView(v){
+  document.querySelectorAll('.nav[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='view-'+v));
+  document.querySelector('.stage').classList.toggle('in-set',v==='settings');
+  if(v==='recs') renderRecs(); else if(v==='settings') enterSettings(); else renderDevices();
+  document.querySelector('main').scrollTop=0;
+}
+document.querySelectorAll('.nav[data-view]').forEach(b=>b.onclick=()=>showView(b.dataset.view));
+
+/* ---------- atualização automática ---------- */
+let upd={state:'idle'}, applying=false;
+function renderUpd(){
+  const t={disabled:'Atualização automática indisponível nesta versão (build de desenvolvimento).',off:'Atualizações desativadas.',
+    idle:'VeloDesk '+upd.current+' está atualizado.',checking:'Verificando…',downloading:'Baixando a versão '+upd.latest+'…',
+    ready:'Versão '+upd.latest+' pronta. '+(upd.supervised?'Será aplicada quando não houver sessão ativa.':'Reinicie o VeloDesk para aplicar.'),
+    error:'Não foi possível atualizar: '+(upd.error||'erro')}[upd.state]||'';
+  $('updSt').textContent=(upd.current?'Versão '+upd.current+' · ':'')+t; $('aboutVer').textContent=upd.current?'Versão '+upd.current:'';
+}
+async function pollUpdate(){
+  try{ upd=await api('/api/update'); }catch{ return; }
+  renderUpd();
+  if(upd.state==='ready'&&upd.supervised&&P.updateMode!=='off'&&!applying&&!pc&&!deciding&&!$('scrim').classList.contains('show')){
+    applying=true; toast('Atualizando para a versão '+upd.latest+'…');
+    fetch('/api/update?do=apply',{method:'POST'}).then(r=>{ if(!r.ok) applying=false; }).catch(()=>{ applying=false; });
+  }
+}
+async function checkUpdate(){ $('updSt').textContent='Verificando…'; try{ await fetch('/api/update?do=check',{method:'POST'}); }catch{} setTimeout(pollUpdate,2500); }
+
+/* ---------- agente local (injeção de entrada) ---------- */
+let agent, agentReady=false, agentTimer, agentAvail=null, agentTok='';
+function agentStatus(){
+  $('agSt').textContent=agentReady?'· Controle remoto ativo':agentAvail===false?'· Controle remoto indisponível neste sistema':'';
+}
+async function connectAgent(){
+  clearTimeout(agentTimer);
+  try{ const r=await fetch('/agent-token',{cache:'no-store'}); if(!r.ok) throw 0; agentTok=await r.text(); agentAvail=true; }
+  catch{ agentAvail=false; agentStatus(); return; }
+  agent=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/agent');
+  agent.onopen=()=>agent.send(JSON.stringify({k:'auth',token:agentTok}));
+  agent.onmessage=e=>{ try{ if(JSON.parse(e.data).k==='ready'){ agentReady=true; agentStatus(); } }catch{} };
+  agent.onclose=()=>{ agentReady=false; agentStatus(); agentTimer=setTimeout(connectAgent,3000); };
+  agent.onerror=()=>{};
+}
+const INPUT_KINDS=new Set(['mm','md','mu','wh','kd','ku']);
+function forwardInput(raw){ if(agentReady) try{ if(INPUT_KINDS.has(JSON.parse(raw).k)) agent.send(raw); }catch{} }
+
+/* ---------- dispositivos (apelido, favorito, acesso salvo) ---------- */
+let devices=store.get('devices',null);
+if(!devices){ devices={}; for(const r of store.get('recent',[])) devices[r.id]={name:'',fav:false,at:r.at,n:1}; store.set('devices',devices); }
+let saved=new Set(), devFilter='all';
+const saveDevices=()=>{ store.set('devices',devices); renderDevices(); };
+const dname=id=>(devices[id]&&devices[id].name)||fmt(id);
+const when=t=>{ if(!t) return 'Nunca conectado'; const m=Math.round((Date.now()-t)/60000);
+  if(m<1) return 'Agora há pouco'; if(m<60) return 'Há '+m+' min'; if(m<1440) return 'Há '+Math.round(m/60)+' h';
+  return new Date(t).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}); };
+const sortedDevices=()=>Object.entries(devices).map(([id,d])=>({id,...d})).sort((a,b)=>(!!b.fav-!!a.fav)||((b.at||0)-(a.at||0)));
+const ico=(n)=>`<svg><use href="#i-${n}"/></svg>`;
+function useDevice(id){ showView('home'); $('target').value=fmt(id); $('tpw').focus(); }
+function iconBtn(name,title,fn,on,cls){ const b=document.createElement('button'); b.className='icon'+(on?' on':'')+(cls?' '+cls:''); b.title=title; b.innerHTML=ico(name); b.onclick=e=>{ e.stopPropagation(); fn(); }; return b; }
+const byTime=()=>Object.entries(devices).map(([id,d])=>({id,...d})).sort((a,b)=>(b.at||0)-(a.at||0));
+let online=new Set(), presenceOk=false, found=[], devMode=store.get('devView','big');
+const SVG_MON='<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2.5"/><path d="M8 20h8M12 16v4"/></svg>';
+const hue=id=>Number(String(id).slice(-3))%360;
+const thBg=id=>`background:linear-gradient(135deg,hsl(${hue(id)} 38% 36%),hsl(${(hue(id)+35)%360} 40% 24%))`;
+const OSN={windows:'Windows',linux:'Linux',darwin:'macOS'};
+function closePop(){ const p=$('pop'); if(p) p.remove(); }
+function popMenu(anchor,items){
+  closePop(); const p=document.createElement('div'); p.className='pop'; p.id='pop';
+  for(const [t,fn,dg] of items){ const b=document.createElement('button'); b.textContent=t; if(dg) b.className='dg'; b.onclick=e=>{ e.stopPropagation(); closePop(); fn(); }; p.append(b); }
+  document.body.append(p); const r=anchor.getBoundingClientRect();
+  p.style.left=Math.max(8,Math.min(r.left,innerWidth-200))+'px'; p.style.top=Math.min(r.bottom+4,innerHeight-p.offsetHeight-8)+'px';
+  setTimeout(()=>document.addEventListener('click',closePop,{once:true}),0);
+}
+const renameDev=async id=>{ if(await ask('Renomear dispositivo',fmt(id),'Salvar',devices[id].name||'','Cancelar')){ devices[id].name=$('mi').value.trim(); saveDevices(); } };
+const removeDev=async id=>{ if(await ask('Remover dispositivo','"'+dname(id)+'" sai da lista (o computador em si não é afetado).','Remover',null,'Cancelar')){ delete devices[id]; tokDel(id); saveDevices(); } };
+const devMenu=(btn,d)=>popMenu(btn,[['Conectar',()=>useDevice(d.id)],[d.fav?'Remover dos favoritos':'Adicionar aos favoritos',()=>{ devices[d.id].fav=!d.fav; saveDevices(); }],['Renomear',()=>renameDev(d.id)],saved.has(d.id)?['Esquecer acesso salvo',()=>{ tokDel(d.id); toast('Acesso salvo esquecido'); }]:null,d.mac?['Acordar (Wake-on-LAN)',()=>wakeLocal(d)]:null,d.mac&&online.size?['Acordar por outro computador…',()=>wakeVia(d)]:null,['Remover da lista',()=>removeDev(d.id),true]].filter(Boolean));
+const dotHtml=id=>`<span class="sd ${presenceOk?(online.has(id)?'on':'off'):''}" title="${presenceOk?(online.has(id)?'Online':'Offline'):''}"></span>`;
+const thHtml=d=>`<div class="th" style="${thBg(d.id)}">${d.thumb?`<img src="${d.thumb}" alt="">`:SVG_MON}</div>`;
+const subTxt=d=>(d.name?fmt(d.id)+' · ':'')+when(d.at)+(saved.has(d.id)?' · acesso salvo':'');
+function moreBtn(d){ const b=document.createElement('button'); b.className='icon'; b.title='Mais opções'; b.innerHTML=ico('more'); b.onclick=e=>{ e.stopPropagation(); devMenu(b,d); }; return b; }
+function tile(d){
+  const el=document.createElement('div'); el.className='tile'; el.onclick=()=>useDevice(d.id);
+  el.innerHTML=`${thHtml(d)}${dotHtml(d.id)}<div class="ft"><span class="t"><b>${esc(dname(d.id))}</b>${devMode==='list'?`<span class="sub">${esc(subTxt(d))}</span>`:''}</span></div>`;
+  const star=iconBtn('star',d.fav?'Remover dos favoritos':'Favoritar',()=>{ devices[d.id].fav=!d.fav; saveDevices(); },d.fav,'stb');
+  if(devMode==='list') el.querySelector('.ft').after(star); else el.querySelector('.th').after(star);
+  el.querySelector('.ft').append(moreBtn(d)); return el;
+}
+function strip(d){
+  const el=document.createElement('div'); el.className='sc'; el.onclick=()=>useDevice(d.id);
+  el.innerHTML=`<div class="th" style="${thBg(d.id)}">${d.thumb?`<img src="${d.thumb}" alt="">`:SVG_MON}${dotHtml(d.id)}</div><span class="t"><b>${esc(dname(d.id))}</b><span class="sub">${esc(subTxt(d))}</span></span>`;
+  el.append(moreBtn(d)); return el;
+}
+function foundCard(f){
+  const el=document.createElement('div'); el.className='sc'+(f.sameServer?'':' off');
+  el.title=f.sameServer?'Disponível na sua rede':'Este computador usa outro servidor VeloDesk'; if(f.sameServer) el.onclick=()=>useDevice(f.id);
+  el.innerHTML=`<div class="th" style="${thBg(f.id)}">${SVG_MON}<span class="sd on"></span></div><span class="t"><b>${esc(f.name||fmt(f.id))}</b><span class="sub">${fmt(f.id)} · ${esc(OSN[f.os]||f.os||'')}${f.sameServer?'':' · outro servidor'}</span></span>`;
+  return el;
+}
+function fillTiles(box,list,title,text){
+  box.className='tiles'+(devMode==='big'?'':' '+devMode); box.innerHTML='';
+  if(!list.length){ box.className='tiles'; box.innerHTML=`<div class="empty"><b>${title}</b>${text}</div>`; return; }
+  for(const d of list) box.append(tile(d));
+}
+const VM_ICONS={big:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>',small:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="4.5" height="4.5" rx=".8"/><rect x="9.7" y="3" width="4.5" height="4.5" rx=".8"/><rect x="16.5" y="3" width="4.5" height="4.5" rx=".8"/><rect x="3" y="9.7" width="4.5" height="4.5" rx=".8"/><rect x="9.7" y="9.7" width="4.5" height="4.5" rx=".8"/><rect x="16.5" y="9.7" width="4.5" height="4.5" rx=".8"/><rect x="3" y="16.5" width="4.5" height="4.5" rx=".8"/><rect x="9.7" y="16.5" width="4.5" height="4.5" rx=".8"/><rect x="16.5" y="16.5" width="4.5" height="4.5" rx=".8"/></svg>',list:'<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>'};
+const VM_TIP={big:'Miniaturas grandes',small:'Miniaturas pequenas',list:'Lista'};
+function renderVm(){
+  document.querySelectorAll('[data-vm]').forEach(box=>{ box.innerHTML=Object.keys(VM_ICONS).map(k=>`<button data-m="${k}" title="${VM_TIP[k]}" class="${k===devMode?'on':''}">${VM_ICONS[k]}</button>`).join('');
+    box.querySelectorAll('button').forEach(b=>b.onclick=()=>{ devMode=b.dataset.m; store.set('devView',devMode); renderDevices(); }); });
+}
+function renderDevices(){
+  const all=sortedDevices(), recent=byTime();
+  const favs=all.filter(d=>d.fav);
+  $('favWrap').hidden=!favs.length; $('homeFavs').innerHTML=''; favs.forEach(d=>$('homeFavs').append(strip(d)));
+  fillTiles($('homeRecent'),recent.slice(0,12),'Nenhuma sessão ainda','Os computadores que você acessar aparecem aqui, com uma miniatura da última sessão.');
+  const q=($('devSearch').value||'').toLowerCase().replace(/\s/g,'');
+  const l=all.filter(d=>(devFilter==='all'||d.fav)&&(!q||(d.name||'').toLowerCase().replace(/\s/g,'').includes(q)||d.id.includes(q)));
+  fillTiles($('listDevs'),l,all.length?'Nada encontrado':'Nenhum dispositivo ainda',all.length?'Tente outro filtro ou nome.':'Os computadores que você acessar aparecem aqui.');
+  const f=found.filter(x=>x.id!==myId); $('foundWrap').hidden=!f.length; $('homeFound').innerHTML=''; f.forEach(x=>$('homeFound').append(foundCard(x)));
+  renderVm();
+}
+function setFilter(f){ devFilter=f; $('devSeg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.f===f)); }
+$('devSearch').addEventListener('input',renderDevices);
+$('devSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{ setFilter(b.dataset.f); renderDevices(); });
+function clearRecent(){ for(const id of Object.keys(devices)) if(!devices[id].fav&&!devices[id].name) delete devices[id]; saveDevices(); toast('Histórico limpo (favoritos e nomeados foram mantidos)'); }
+function addRecent(id){
+  const d=devices[id]; if(!d&&!P.history) return;
+  devices[id]={name:d?d.name:'',fav:d?d.fav:false,at:Date.now(),n:(d?d.n:0)+1,thumb:d?d.thumb:undefined,wall:d?d.wall:undefined,mac:d?d.mac:undefined}; saveDevices(); refreshPresence();
+}
+function captureThumb(id){          // miniatura da última sessão, mostrada na tela inicial
+  try{ const v=$('rv'); if(!v.videoWidth||!devices[id]||devices[id].wall) return;   // com papel de parede, a miniatura é ele const c=document.createElement('canvas'); c.width=320; c.height=Math.round(320*v.videoHeight/v.videoWidth);
+    c.getContext('2d').drawImage(v,0,0,c.width,c.height); devices[id].thumb=c.toDataURL('image/jpeg',.55); store.set('devices',devices); }catch{}
+}
+function refreshPresence(){ const ids=Object.keys(devices); if(ws&&ws.readyState===1&&ids.length) ws.send(JSON.stringify({t:'presence',ids})); }
+async function pollFound(){ if(!P.discScan){ found=[]; renderDevices(); return; } try{ found=(await api('/api/discovery')).devices; let ch=false; for(const f of found) if(f.mac&&devices[f.id]&&devices[f.id].mac!==f.mac){ devices[f.id].mac=f.mac; ch=true; } if(ch) store.set('devices',devices); renderDevices(); }catch{} }
+const copyInvite=()=>clip('Para acessar meu computador, abra o VeloDesk e conecte ao ID '+fmt(myId)+' com a senha '+password+'.','Instruções copiadas');
+$('target').addEventListener('input',e=>{ const v=e.target.value.replace(/\D/g,'').slice(0,9); e.target.value=fmt(v); });
+for(const id of ['target','tpw']) $(id).addEventListener('keydown',e=>e.key==='Enter'&&connect());
+
+/* ---------- Wake-On-LAN ---------- */
+const MACRE=/^([0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
+async function wakeLocal(d){ try{ await api('/api/wol/send',{mac:d.mac}); toast('Pacote Wake-on-LAN enviado a '+dname(d.id)+'. O computador precisa estar na mesma rede e ter o recurso ligado.'); }catch(e){ toast(e.message,true); } }
+function wakeVia(d){
+  const hs=[...online].filter(id=>id!==d.id&&id!==myId); if(!hs.length) return toast('Nenhum outro computador online para ajudar',true);
+  popMenu($('homeRecent'),hs.map(id=>[dname(id),()=>{ send(id,{kind:'wake',mac:d.mac}); toast('Pedido enviado a '+dname(id)+': se ele estiver na mesma rede de '+dname(d.id)+', o pacote será enviado.'); }]));
+}
+const wakeSeen=new Map();
+async function onWake(from,d){                         // outro computador pede que ESTE acorde uma máquina da rede
+  if(P.wolMode==='off'||typeof d.mac!=='string'||!MACRE.test(d.mac)) return;
+  if(P.wolMode==='list'&&!P.wolList.split(/[\n,;]+/).map(x=>x.replace(/\D/g,'')).filter(Boolean).slice(0,25).includes(from)) return;
+  const now=Date.now(); if(now-(wakeSeen.get(from)||0)<10000) return; wakeSeen.set(from,now);
+  try{ await api('/api/wol/send',{mac:d.mac}); toast('Wake-on-LAN enviado a pedido de '+dname(from)); }catch{}
+}
+
+/* ---------- acesso salvo do lado de quem conecta (cofre do sistema, só na casca desktop) ---------- */
+const hasSecrets=()=>!!(sh&&sh.secrets);
+async function tokGet(id){ if(!hasSecrets()) return null; try{ const v=await sh.secrets.get('tok:'+id); return v?JSON.parse(v):null; }catch{ return null; } }
+async function tokDel(id){ if(!hasSecrets()) return; try{ await sh.secrets.del('tok:'+id); }catch{} saved.delete(id); renderDevices(); }
+async function loadSaved(){ if(!hasSecrets()) return; try{ saved=new Set((await sh.secrets.keys()).filter(k=>k.startsWith('tok:')).map(k=>k.slice(4))); }catch{} renderDevices(); }
+
+/* ---------- área de transferência ---------- */
+const clipRead=async()=>{ try{ return sh&&sh.clip?await sh.clip.read():await navigator.clipboard.readText(); }catch{ return ''; } };
+const clipWrite=async t=>{ try{ if(sh&&sh.clip) await sh.clip.write(t); else await navigator.clipboard.writeText(t); }catch{} };
+let lastClip='', clipTimer;
+async function startClip(){
+  stopClip(); lastClip=await clipRead();
+  clipTimer=setInterval(async()=>{
+    if(!dc||dc.readyState!=='open') return;
+    const t=await clipRead();
+    if(t&&t!==lastClip&&t.length<200000){ lastClip=t; dc.send(JSON.stringify({k:'clip',t})); }
+  },1000);
+}
+function stopClip(){ clearInterval(clipTimer); clipTimer=null; lastClip=''; }
+function gotClip(t){ if(typeof t==='string'&&t.length<200000){ lastClip=t; clipWrite(t); } }
+
+/* ---------- gravação de sessão ---------- */
+let rec=null;
+const stamp=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds()); };
+function startRec(src,kind,id){
+  if(rec||!P.recEnable||!src||!window.MediaRecorder) return;
+  const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m));
+  const name=`${stamp()}_${kind}_${id}.webm`;
+  let mr; try{ mr=new MediaRecorder(src,{mimeType:mime,videoBitsPerSecond:4e6}); }catch{ toast('Gravação indisponível neste sistema',true); return; }
+  let chain=Promise.resolve(), failed=false;
+  mr.ondataavailable=e=>{ if(e.data&&e.data.size) chain=chain.then(()=>fetch('/api/rec/chunk?name='+name,{method:'POST',body:e.data}).then(r=>{ if(!r.ok&&!failed){ failed=true; toast('Não foi possível salvar a gravação',true); } })); };
+  mr.onstop=()=>{ chain.then(()=>{ if(!failed) toast('Gravação salva em Gravações'); }); rec=null; updRecUi(); };
+  mr.start(4000); rec={mr,name}; updRecUi();
+}
+function stopRec(){ if(rec&&rec.mr.state!=='inactive') rec.mr.stop(); }
+function updRecUi(){ $('recBtn').classList.toggle('rec',!!rec); $('recBtn').title=rec?'Parar gravação':'Gravar sessão'; }
+$('recBtn').onclick=()=>{ if(rec) stopRec(); else startRec($('rv').srcObject,'sai',V?V.to:''); };
+async function renderRecs(){
+  let l=[]; try{ l=await api('/api/rec/list'); $('recDirTxt').textContent='Salvas em '+(await api('/api/rec/dir')).dir; }catch{}
+  const box=$('recList'); box.innerHTML='';
+  if(!l.length){ box.innerHTML='<div class="empty" style="border:0"><b>Nenhuma gravação</b>Ative a gravação em Configurações › Gravação ou use o botão ● durante uma sessão.</div>'; return; }
+  for(const r of l){
+    const m=/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})_(sai|ent)_(\d*)\.webm$/.exec(r.name);
+    const who=m&&m[8]?dname(m[8]):'', title=m?(m[7]==='sai'?'Controle de ':'Sessão recebida de ')+(who||'dispositivo'):r.name;
+    const date=m?`${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}`:new Date(r.mod*1000).toLocaleString('pt-BR');
+    const el=document.createElement('div'); el.className='rec-item';
+    el.innerHTML=`<span class="av">${ico('rec')}</span><span class="t"><b>${esc(title)}</b><span class="sub">${date} · ${(r.size/1048576).toFixed(1)} MB</span></span>`;
+    const play=document.createElement('button'); play.className='ghost sm'; play.innerHTML=ico('play')+'Assistir'; play.onclick=()=>{ $('playT').textContent=title+' · '+date; $('playV').src='/rec/'+r.name; $('playdlg').classList.add('show'); };
+    const del=iconBtn('trash','Excluir',async()=>{ if(await ask('Excluir gravação','Esta ação não pode ser desfeita.','Excluir',null,'Cancelar')){ await api('/api/rec/delete',{name:r.name}); renderRecs(); } });
+    el.append(play,del); box.append(el);
+  }
+}
+$('playX').onclick=()=>{ $('playV').pause(); $('playV').removeAttribute('src'); $('playdlg').classList.remove('show'); };
+
+/* ---------- sessão: pares ---------- */
+let connTimer, ws, myId='', pc, dc, dcf, peerId, stream, role, statsTimer, tickTimer, startedAt, hideTimer;
+let S=null, V=null, rc=null, rcTimer;
+let iceHold=false, iceOut=[], iceIn=[];                     // candidatos ICE: só saem depois da oferta/resposta e só entram depois da descrição remota
+function releaseIce(){ iceHold=false; for(const c of iceOut.splice(0)) send(peerId,{kind:'ice',c}); }
+async function flushIce(){ for(const c of iceIn.splice(0)){ try{ await pc.addIceCandidate(c); }catch{} } }
+async function gotIce(c){ if(!pc.remoteDescription){ iceIn.push(c); return; } try{ await pc.addIceCandidate(c); }catch{} }                       // S: sessão como host · V: sessão como controlador · rc: reconexão após reinício
+const stat={text:'Conectando…',ok:false};
+function iceCfg(){
+  const fix=(u,p)=>/^(stuns?|turns?):/i.test(u)?u:p+u, s=[];
+  if(P.stun) s.push({urls:fix(P.stun,'stun:')});
+  if(P.turnUrl) s.push({urls:fix(P.turnUrl,'turn:'),username:P.turnUser,credential:P.turnPass});
+  return {iceServers:s,iceTransportPolicy:P.allowP2P?'all':'relay'};
+}
+function mkPeer(to){
+  peerId=to; pc=new RTCPeerConnection(iceCfg());
+  pc.onicecandidate=e=>{ if(!e.candidate) return; if(iceHold) iceOut.push(e.candidate); else send(to,{kind:'ice',c:e.candidate}); };
+  pc.onconnectionstatechange=()=>{
+    const s=pc.connectionState;
+    if(s==='connected'){
+      clearTimeout(connTimer); startedAt=Date.now(); $('vload').style.display='none'; $('vdot').style.display=''; $('vq').style.display='';
+      $('vinfo').textContent=role==='viewer'?dname(to):'';
+      tickTimer=setInterval(tick,1000); statsTimer=setInterval(pollStats,1000); armHide();
+      if(role==='host'){ $('hst').textContent='Em sessão com '+dname(to); hostLive(true,to); if(P.autoRecIn&&P.recEnable) startRec(stream,'ent',to); }
+    }
+    if(s==='failed'||s==='closed'){ toast('Conexão encerrada',true); cleanup(); }
+    if(s==='disconnected') $('vinfo').textContent='Reconectando…';
+  };
+}
+function cleanup(){
+  if(role==='viewer'&&V) captureThumb(V.to);
+  const wasHost=role==='host', endedInfo=(wasHost&&S)?{name:dname(S.from),dur:startedAt?Date.now()-startedAt:0}:null;
+  clearTimeout(connTimer); clearInterval(statsTimer); clearInterval(tickTimer); stopClip(); stopRec();
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+  if(pc){pc.onconnectionstatechange=null;pc.close();pc=null}
+  closeTuns(); fm.path=''; fm.parent=''; fm.entries=[]; fm.loaded=false; fm.err=''; fmWait.clear(); fmReq.clear();
+  dc=null; dcf=null; dcFile=null; peerId=null; role=null; lastT=0; S=null; V=null; iceHold=false; iceOut=[]; iceIn=[];
+  $('viewer').classList.remove('show'); $('rv').srcObject=null; $('amenu').hidden=true;
+  $('vdot').style.display='none'; $('vq').style.display='none'; $('vload').style.display=''; $('vmeta').textContent=''; $('vbw').textContent='';
+  $('vperm').hidden=true; $('vrec').hidden=true; $('recBtn').hidden=true; $('vver').hidden=true;
+  if(document.fullscreenElement) document.exitFullscreen();
+  chatReset();
+  if(wasHost){ $('hst').textContent=stat.text; hostLive(false,endedInfo); if(P.rotateTemp) newPw(); }
+  if(rc){ if(Date.now()<rc.until){ clearTimeout(rcTimer); rcTimer=setTimeout(autoReconnect,8000); } else rc=null; }
+}
+async function hangup(){
+  if(role==='viewer'&&P.lockOnEnd&&V&&V.perms&&V.perms.lock&&dc&&dc.readyState==='open'){ try{ dc.send(JSON.stringify({k:'act',a:'lock'})); }catch{} await sleep(250); }
+  if(peerId) send(peerId,{kind:'bye'}); rc=null; cleanup();
+}
+const tick=()=>{ const s=Math.floor((Date.now()-startedAt)/1000), t=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); $('vmeta').textContent=t; $('liveT').textContent=t; };
+let lastBytes=0,lastT=0;
+async function pollStats(){
+  if(!pc) return;
+  const st=await pc.getStats(); let rtt,bytes;
+  st.forEach(r=>{ if(r.type==='candidate-pair'&&r.state==='succeeded'&&r.currentRoundTripTime!=null) rtt=r.currentRoundTripTime*1000;
+                  if((r.type==='inbound-rtp'||r.type==='outbound-rtp')&&r.kind==='video') bytes=r.bytesReceived??r.bytesSent; });
+  if(rtt!=null){ $('vlat').textContent=Math.round(rtt)+' ms'; $('vq').className='q '+(rtt<60?'g':rtt<150?'y':'r'); }
+  if(bytes!=null){ const now=performance.now(); if(lastT) $('vbw').textContent=((bytes-lastBytes)*8/1e6/((now-lastT)/1000)).toFixed(1)+' Mbps'; lastBytes=bytes; lastT=now; }
+}
+function armHide(){ $('vbar').classList.remove('hide'); clearTimeout(hideTimer); if(P.hideBar) hideTimer=setTimeout(()=>{ if($('amenu').hidden) $('vbar').classList.add('hide'); },3000); }
+$('viewer').addEventListener('mousemove',e=>{ if(e.clientY<90) armHide(); });
+function toggleFs(){ document.fullscreenElement?document.exitFullscreen():$('viewer').requestFullscreen(); }
+
+/* ---------- quem conecta (controlador) ---------- */
+async function connect(){
+  const to=$('target').value.replace(/\D/g,''), pw=$('tpw').value.trim();
+  if(to.length!==9){ toast('Digite o ID de 9 dígitos',true); return $('target').focus(); }
+  if(to===myId){ toast('Você não pode conectar a si mesmo',true); return; }
+  let tok=null;
+  if(!pw){ tok=await tokGet(to); if(!tok){ toast('Digite a senha',true); return $('tpw').focus(); } }
+  if(pc) return;
+  rc=null; startSession(to,{pw,tok});
+}
+function startSession(to,o){
+  role='viewer'; mkPeer(to);
+  V={to,vn:rnd(16),pw:o.pw||'',tok:o.tok||null,perms:null,keys:{},ctx:''};
+  pc.ondatachannel=e=>{ if(e.channel.label==='fast') dcf=e.channel; else if(e.channel.label==='files') bindFiles(e.channel); else { dc=e.channel; dc.onmessage=m=>viewerMsg(m.data); } };
+  pc.ontrack=e=>{ $('rv').srcObject=e.streams[0]; try{ e.receiver.jitterBufferTarget=0; }catch{} try{ e.receiver.playoutDelayHint=0; }catch{} };   // menos buffer = menos atraso
+  $('vmsg').textContent=o.silent?'Reconectando após o reinício…':'Aguardando aceite…'; $('vinfo').textContent='Conectando a '+dname(to)+'…';
+  $('viewer').classList.add('show'); $('rv').style.cursor=P.showLocalCursor?'default':'none'; bindInput(); addRecent(to);
+  send(to,{kind:'connect-request',vn:V.vn,v:2});
+  clearTimeout(connTimer);
+  connTimer=setTimeout(()=>{ if(pc&&pc.connectionState!=='connected'){ cleanup(); toast('Sem resposta do computador remoto',true); } },90000);
+}
+async function onChallenge(d){
+  V.ctx=['velodesk2',myId,V.to,V.vn,d.hn].join('|'); $('vmsg').textContent='Verificando credenciais…';
+  const au={kind:'auth'};
+  if(V.pw){
+    V.keys.temp=await pbkdf2(V.pw,d.ts,d.it); au.pt=await hmac(V.keys.temp,V.ctx);
+    if(d.fs){ V.keys.fixed=await pbkdf2(V.pw,d.fs,d.it); au.pf=await hmac(V.keys.fixed,V.ctx); }
+  } else if(V.tok){ V.keys.token=unhex(V.tok.secret); au.tid=V.tok.id; au.pk=await hmac(V.keys.token,V.ctx); }
+  au.want=!!(P.rememberAccess&&hasSecrets()&&d.save&&!V.tok);
+  send(V.to,au);
+}
+async function onNeedCode(){
+  $('vmsg').textContent='Aguardando o código de verificação…';
+  if(!await ask('Verificação em duas etapas','Digite o código de 6 dígitos do app autenticador do computador remoto.','Verificar','','Cancelar',{numeric:true,max:7})) return hangup();
+  send(V.to,{kind:'code',c:$('mi').value.replace(/\s/g,'')});
+}
+const failSec=()=>{ cleanup(); toast('Falha na verificação de segurança da conexão',true); };
+async function onOffer(d){
+  const key=V&&V.keys[d.how]; if(!key||!d.sdp||!d.mac) return failSec();
+  if(!ctEq(await hmac(key,V.ctx+'|offer|'+fp(d.sdp.sdp)),d.mac)) return failSec();
+  iceHold=true;
+  await pc.setRemoteDescription(d.sdp); await flushIce(); const ans=await pc.createAnswer(); ans.sdp=boostSdp(ans.sdp); await pc.setLocalDescription(ans);
+  const answer=pc.localDescription, amac=await hmac(key,V.ctx+'|answer|'+fp(answer.sdp));
+  send(V.to,{kind:'answer',sdp:answer,mac:amac}); releaseIce();
+  $('vmsg').textContent='Estabelecendo conexão…';
+}
+function bindInput(){
+  const v=$('rv');
+  const pos=e=>{ const r=v.getBoundingClientRect(); const ar=v.videoWidth/v.videoHeight||16/9;
+    let w=r.width,h=r.height,ox=0,oy=0; if(w/h>ar){const nw=h*ar;ox=(w-nw)/2;w=nw}else{const nh=w/ar;oy=(h-nh)/2;h=nh}
+    return {x:Math.min(1,Math.max(0,(e.clientX-r.left-ox)/w)),y:Math.min(1,Math.max(0,(e.clientY-r.top-oy)/h))} };
+  const tx=o=>{ if(V&&V.perms&&!V.perms.control) return; const ch=(o.k==='mm'||o.k==='wh')?dcf:dc; if(ch&&ch.readyState==='open') ch.send(JSON.stringify(o)); };
+  v.onmousemove=e=>tx({k:'mm',...pos(e)});
+  v.onmousedown=e=>{v.focus();tx({k:'md',b:e.button,...pos(e)})}; v.onmouseup=e=>tx({k:'mu',b:e.button,...pos(e)});
+  v.onwheel=e=>{tx({k:'wh',dx:e.deltaX,dy:e.deltaY});e.preventDefault()}; v.oncontextmenu=e=>e.preventDefault();
+  window.onkeydown=e=>{ if($('viewer').classList.contains('show')&&role==='viewer'&&!document.activeElement.matches('input,textarea,select')){ tx({k:'kd',code:e.code}); e.preventDefault(); } };
+  window.onkeyup=e=>{ if($('viewer').classList.contains('show')&&role==='viewer'&&!document.activeElement.matches('input,textarea,select')) tx({k:'ku',code:e.code}); };
+}
+// mensagens do host para o controlador (canal confiável, já protegido por DTLS)
+const verNewer=(a,b)=>{ const x=String(a).split('.').map(Number), y=String(b).split('.').map(Number); for(let i=0;i<3;i++){ const d=(x[i]||0)-(y[i]||0); if(d) return d>0; } return false; };
+// O host informa a versão dele no "hello". Hosts antigos não informam: aparecem como "anterior".
+function checkHostVersion(v){
+  const hv=typeof v==='string'&&/^\d+\.\d+\.\d+$/.test(v)?v:'';
+  const old=!!upd.current&&(hv?verNewer(upd.current,hv):true);
+  $('vver').hidden=!old;
+  if(old){ $('vver').textContent='Versão antiga no outro computador'+(hv?' ('+hv+')':''); toast('O outro computador usa uma versão antiga do VeloDesk'+(hv?' ('+hv+')':'')+'. Atualize-o para ter a marca na tela, a janela da sessão e as correções.',true); }
+}
+function applyViewerPerms(){
+  $('vperm').hidden=!!V.perms.control;
+  $('recBtn').hidden=!(P.recEnable&&V.perms.record&&window.MediaRecorder);
+  for(const b of $('amenu').querySelectorAll('button')) b.disabled=!V.perms[b.dataset.p||b.dataset.a];
+  if(!V.perms.clipboard) stopClip(); else if(P.syncClip&&!clipTimer) startClip();
+  chatChanged();
+}
+async function viewerMsg(raw){
+  let m; try{ m=JSON.parse(raw); }catch{ return; }
+  if(!V) return;
+  if(m.k==='hello'){
+    V.perms=m.perms||{}; rc=null;
+    $('vrec').hidden=!m.rec; applyViewerPerms(); checkHostVersion(m.ver);
+    const dv=devices[V.to];
+    if(dv){
+      if(typeof m.wall==='string'&&m.wall.startsWith('data:image/jpeg;base64,')&&m.wall.length<200000){ dv.thumb=m.wall; dv.wall=true; }
+      if(typeof m.mac==='string'&&MACRE.test(m.mac)) dv.mac=m.mac.toLowerCase();
+      store.set('devices',devices); renderDevices();
+    }
+    if(m.tok&&hasSecrets()){ try{ await sh.secrets.set('tok:'+V.to,JSON.stringify(m.tok)); saved.add(V.to); renderDevices(); toast('Acesso salvo para '+dname(V.to)); }catch{} }
+    if(P.syncClip&&V.perms.clipboard) startClip();
+    if(P.autoRecOut&&P.recEnable&&V.perms.record) startRec($('rv').srcObject,'sai',V.to);
+  }
+  else if(m.k==='clip'){ if(P.syncClip&&V.perms&&V.perms.clipboard) gotClip(m.t); }
+  else if(m.k==='sysinfo'){ const i=m.d||{}; ask('Informações do sistema',`Computador: ${i.host||'—'}\nUsuário: ${i.user||'—'}\nSistema: ${i.os||'—'} (${i.arch||'—'})\nProcessadores: ${i.cpus||'—'}\nMemória: ${i.memMB?(i.memMB/1024).toFixed(1)+' GB':'—'}\nVeloDesk: ${i.version||'—'}`,'Fechar',null,''); }
+  else if(m.k==='act-ok'){ if(m.tok&&m.a==='restart') rc={to:V.to,tok:m.tok,until:Date.now()+6*60000}; toast(m.a==='lock'?'Tela bloqueada':'Comando enviado'); }
+  else if(m.k==='chat') chatGot(m.t);
+  else if(m.k==='perms'){ V.perms=m.perms||{}; applyViewerPerms(); toast('O computador remoto alterou as permissões desta sessão'); }
+  else if(m.k==='fm'){ const w=fmWait.get(m.id); if(w){ fmWait.delete(m.id); m.ok?w.res(m.data||{}):w.rej(new Error(m.err||'Falhou')); } }
+  else if(m.k==='denied') toast('O perfil deste computador não permite essa ação',true);
+}
+$('actBtn').onclick=e=>{ e.stopPropagation(); $('amenu').hidden=!$('amenu').hidden; };
+document.addEventListener('click',()=>{ $('amenu').hidden=true; });
+$('amenu').querySelectorAll('button').forEach(b=>b.onclick=async()=>{
+  const a=b.dataset.a; $('amenu').hidden=true;
+  if(a==='files') return toggleChat(true,'fm');
+  if(a==='tunnels'){ renderTuns(); $('tundlg').classList.add('show'); return; }
+  if(a==='print') return openPrint();
+  if(!dc||dc.readyState!=='open') return;
+  if((a==='restart'||a==='logoff')&&!await ask(a==='restart'?'Reiniciar o computador remoto?':'Encerrar a sessão do usuário remoto?','Quem estiver usando o computador perderá o que não salvou.',a==='restart'?'Reiniciar':'Encerrar',null,'Cancelar')) return;
+  dc.send(JSON.stringify({k:'act',a}));
+});
+function autoReconnect(){
+  if(pc||!rc) return; if(Date.now()>=rc.until){ rc=null; return; }
+  startSession(rc.to,{tok:rc.tok,silent:true});
+}
+
+/* ---------- quem é controlado (host) ---------- */
+const fails=[]; let deciding=false; const waiters={};
+function waitFor(from,kind,ms){
+  return new Promise((res,rej)=>{
+    const t=setTimeout(()=>{ delete waiters[kind]; rej(new Error('timeout')); },ms);
+    waiters[kind]={from,res:d=>{ clearTimeout(t); delete waiters[kind]; res(d); }};
+  });
+}
+function aclAllows(id){
+  return P.acl.split(/[\n,;]+/).map(s=>s.replace(/\s/g,'')).filter(Boolean).some(p=>
+    new RegExp('^'+p.replace(/[.+^${}()|[\]\\]/g,'\\$&').replace(/\*/g,'\\d*').replace(/\?/g,'\\d')+'$').test(id));
+}
+const withTimeout=(p,ms,msg)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg)),ms))]);
+function grabScreen(){ return withTimeout(grabScreen_(),20000,'tempo esgotado ao capturar a tela'); }
+async function grabScreen_(){
+  const opts={video:{frameRate:P.fps},audio:false};
+  if(sh&&sh.requestShare){ window.__shareOpts=opts; await sh.requestShare(); const s=window.__shared; window.__shared=null; if(!s) throw new Error('sem tela'); return s; }
+  return navigator.mediaDevices.getDisplayMedia(opts);
+}
+window.__doShare=async()=>{ window.__shared=await navigator.mediaDevices.getDisplayMedia(window.__shareOpts); return true; };
+// Pede ao WebRTC para já começar em banda alta: mínimo, ponto de partida e teto do bitrate de vídeo (em kbps).
+function boostSdp(sdp){
+  const MIN=2000, START=8000, MAX=Math.round((P.mbps>0?P.mbps:25)*1000), x=`x-google-min-bitrate=${MIN};x-google-start-bitrate=${START};x-google-max-bitrate=${MAX}`;
+  const L=sdp.split('\r\n'), out=[]; let i=0;
+  while(i<L.length){
+    if(!L[i].startsWith('m=video')){ out.push(L[i++]); continue; }
+    let j=i+1; while(j<L.length&&!L[j].startsWith('m=')) j++;
+    const block=L.slice(i,j), pts={}, seen={}, nb=[];
+    for(const l of block){ const m=/^a=rtpmap:(\d+) ([A-Za-z0-9]+)\/90000/.exec(l); if(m&&/^(VP8|VP9|H264|AV1|H265)$/i.test(m[2])) pts[m[1]]=true; }
+    for(const l of block){ const f=/^a=fmtp:(\d+) (.*)$/.exec(l); if(f&&pts[f[1]]){ nb.push(`a=fmtp:${f[1]} ${f[2]};${x}`); seen[f[1]]=true; } else nb.push(l); }
+    for(const l of nb){ out.push(l); const r=/^a=rtpmap:(\d+) /.exec(l); if(r&&pts[r[1]]&&!seen[r[1]]) out.push(`a=fmtp:${r[1]} ${x}`); }
+    i=j;
+  }
+  return out.join('\r\n');
+}
+async function tuneVideo(track){
+  track.contentHint=P.quality==='nitidez'?'detail':P.quality==='fluidez'?'motion':'';
+  try{ await track.applyConstraints({frameRate:P.fps}); }catch{}
+  const sn=pc.getSenders().find(x=>x.track===track); if(!sn) return;
+  const p=sn.getParameters(); if(!p.encodings||!p.encodings.length) p.encodings=[{}];
+  p.encodings[0].maxFramerate=P.fps; p.encodings[0].maxBitrate=(P.mbps>0?P.mbps:25)*1e6; p.encodings[0].scaleResolutionDownBy=1;
+  p.degradationPreference=P.quality==='fluidez'?'maintain-framerate':P.quality==='nitidez'?'maintain-resolution':'balanced';
+  try{ await sn.setParameters(p); }catch{}
+}
+// Confere as provas do controlador. Devolve {how, via, short, macFn} ou null.
+async function authenticate(au,ctx,ts,iters){
+  const macViaCore=(base)=>async(label,f)=>(await api('/api/auth/mac',{...base,ctx,msg:label+'|'+f})).mac;
+  if(au.tid&&au.pk){
+    const r=await api('/api/auth/verify',{kind:'token',tid:au.tid,ctx,proof:au.pk}).catch(()=>null);
+    if(r&&r.ok) return {how:'token',via:r.via,short:!!r.short,macFn:macViaCore({kind:'token',tid:au.tid})};
+  }
+  if(au.pt){
+    const key=await pbkdf2(password,ts,iters);
+    if(ctEq(await hmac(key,ctx),au.pt)) return {how:'temp',via:'temp',macFn:(label,f)=>hmac(key,ctx+'|'+label+'|'+f)};
+  }
+  if(au.pf){
+    const r=await api('/api/auth/verify',{kind:'fixed',ctx,proof:au.pf}).catch(()=>null);
+    if(r&&r.ok) return {how:'fixed',via:'fixed',macFn:macViaCore({kind:'fixed'})};
+  }
+  return null;
+}
+async function onRequest(from,d){
+  const rej=why=>send(from,{kind:'reject',why});
+  if(pc||deciding||invite||$('scrim').classList.contains('show')) return rej('busy');
+  const now=Date.now(); while(fails.length&&now-fails[0]>60000) fails.shift();
+  if(fails.length>=8) return rej('locked');                                  // trava global: 8 erros por minuto
+  if(!agentReady) return rej('no_control');
+  if(P.aclOn&&!aclAllows(from)){ toast('Pedido bloqueado pela lista de acesso: '+fmt(from),true); return rej('not_allowed'); }
+  if(d.v!==2||!d.vn) return rej('old_version');
+  deciding=true;
+  try{
+    const info=await api('/api/auth/info');
+    const hn=rnd(16), ts=rnd(16), ctx=['velodesk2',from,myId,d.vn,hn].join('|');
+    send(from,{kind:'challenge',hn,ts,fs:info.has?info.salt:'',it:info.iters,save:!!P.allowSave});
+    let au; try{ au=await waitFor(from,'auth',20000); }catch{ return rej('timeout'); }
+    const who=await authenticate(au,ctx,ts,info.iters);
+    if(!who){
+      fails.push(now); if(++tempFails>=5){ tempFails=0; newPw(); toast('Muitas tentativas erradas: a senha temporária foi trocada',true); }
+      toast('Tentativa com senha incorreta de '+fmt(from),true); return rej('bad_password');
+    }
+    tempFails=0;
+    // 2FA
+    const needTfa=who.how==='token'?(!who.short&&P.tfaSaved):who.how==='fixed'?P.tfaFixed:P.tfaTemp;
+    if(info.tfa&&needTfa){
+      send(from,{kind:'need-code'});
+      let c; try{ c=await waitFor(from,'code',60000); }catch{ return rej('timeout'); }
+      const r=await api('/api/2fa/verify',{code:c.c}).catch(()=>({ok:false}));
+      if(!r.ok){ fails.push(Date.now()); toast('Código de verificação incorreto de '+fmt(from),true); return rej('bad_code'); }
+    }
+    // política de aceite
+    const fixedLike=who.via==='fixed';
+    if(P.accessMode==='never'&&!fixedLike){ toast('Pedido recusado: este computador só aceita acesso sem supervisão',true); return rej('denied'); }
+    const skipAsk=P.auto||(fixedLike&&P.unattended);
+    let profId=fixedLike?P.profUnattended:P.profInteractive;
+    let custom=null;
+    if(!skipAsk){
+      if(P.accessMode==='window'&&document.visibilityState==='hidden'){ toast('Pedido de '+fmt(from)+' recusado: a janela do VeloDesk está fechada',true); return rej('denied'); }
+      const dec=await askInvite({from,how:who.how,tfa:!!(info.tfa&&needTfa),profId});
+      if(!dec) return rej('denied');
+      profId=dec.profId; custom=dec.perms;
+      if(JSON.stringify(cleanPerms(custom))===JSON.stringify(cleanPerms(profById(profId).perms))) custom=null;   // aceitou sem mexer: é o perfil puro, não "ajustado"
+    }
+    const prof=profById(profId);
+    S={from,how:who.how,via:who.via,ctx,macFn:who.macFn,perms:cleanPerms(custom||prof.perms),profId:prof.id,custom:!!custom,profName:prof.name+(custom?' (ajustado)':''),last:Date.now(),want:!!au.want};
+    try{ stream=await grabScreen(); }
+    catch{ S=null; toast('Compartilhamento cancelado',true); return rej('denied'); }
+    role='host'; mkPeer(from);
+    stream.getTracks().forEach(t=>pc.addTrack(t,stream));
+    stream.getVideoTracks()[0].onended=hangup;
+    await tuneVideo(stream.getVideoTracks()[0]);
+    // O host cria os canais: 'input' confiável (cliques, teclas, área de transferência, ações) e 'fast' sem retransmissão (mouse/rolagem).
+    dc=pc.createDataChannel('input'); dcf=pc.createDataChannel('fast',{ordered:false,maxRetransmits:0}); bindFiles(pc.createDataChannel('files'));
+    dc.onmessage=m=>hostMsg(m.data); dcf.onmessage=m=>hostMsg(m.data); dc.onopen=sendHello; pc.ondatachannel=e=>hostChannel(e.channel);
+    iceHold=true;
+    const off=await pc.createOffer(); off.sdp=boostSdp(off.sdp); await pc.setLocalDescription(off);
+    const sdp=pc.localDescription, omac=await S.macFn('offer',fp(sdp.sdp));
+    send(from,{kind:'offer',sdp,mac:omac,how:who.how}); releaseIce();
+    toast('Sessão iniciada com '+dname(from)+' · '+prof.name);
+  } catch(e){ console.error(e); if(!pc) rej('denied'); }
+  finally { deciding=false; }
+}
+async function onAnswer(d){
+  if(!S||role!=='host') return;
+  let exp=''; try{ exp=await S.macFn('answer',fp(d.sdp.sdp)); }catch{}
+  if(!ctEq(exp,d.mac||'')){ hangup(); toast('Falha na verificação de segurança da conexão',true); return; }
+  await pc.setRemoteDescription({type:d.sdp.type,sdp:boostSdp(d.sdp.sdp)}); await flushIce();   // o MAC já conferiu o fingerprint; o ajuste de bitrate não o altera
+}
+async function sendHello(){
+  if(!S||!dc||dc.readyState!=='open') return;
+  const hello={k:'hello',perms:S.perms,prof:S.profName,rec:!!(P.autoRecIn&&P.recEnable),ver:upd.current||''};
+  if(S.want&&S.how!=='token'&&P.allowSave){ try{ const t=await api('/api/token/issue',{for:S.from,via:S.via}); hello.tok={id:t.id,secret:t.secret}; }catch{} }
+  try{ const w=await api('/api/wol/self'); if(P.wolMode!=='off'&&w.macs&&w.macs[0]) hello.mac=w.macs[0]; }catch{}
+  try{ const r=await fetch('/api/wallpaper',{headers:{'X-Agent-Token':agentTok}}); if(r.ok){ const b=await r.blob(); if(b.size<150000) hello.wall=await new Promise(res=>{ const f=new FileReader(); f.onload=()=>res(f.result); f.readAsDataURL(b); }); } }catch{}
+  dc.send(JSON.stringify(hello));
+  if(S.perms.clipboard) startClip();
+}
+// mensagens do controlador para o host: cada uma só vale se o perfil da sessão permitir
+async function hostMsg(raw){
+  if(!S) return;
+  let m; try{ m=JSON.parse(raw); }catch{ return; }
+  if(INPUT_KINDS.has(m.k)){ if(S.perms.control){ S.last=Date.now(); forwardInput(raw); } return; }
+  if(m.k==='chat'){ S.last=Date.now(); chatGot(m.t); return; }
+  if(m.k==='clip'){ if(S.perms.clipboard){ S.last=Date.now(); gotClip(m.t); } return; }
+  if(m.k==='fm') return hostFm(m);
+  if(m.k!=='act') return;
+  const reply=o=>{ if(dc&&dc.readyState==='open') dc.send(JSON.stringify(o)); };
+  S.last=Date.now();
+  if(m.a==='sysinfo'){ if(!S.perms.sysinfo) return reply({k:'denied',a:m.a}); try{ reply({k:'sysinfo',d:await api('/api/sysinfo')}); }catch{} return; }
+  if(!['restart','lock','logoff'].includes(m.a)) return;
+  if(!S.perms[m.a]) return reply({k:'denied',a:m.a});
+  const ok={k:'act-ok',a:m.a};
+  if(m.a==='restart'&&P.allowShortTerm){ try{ const t=await api('/api/token/issue',{for:S.from,via:S.via,short:true}); ok.tok={id:t.id,secret:t.secret}; }catch{} }
+  try{
+    const r=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json','X-Agent-Token':agentTok},body:JSON.stringify({a:m.a})});
+    if(!r.ok) throw new Error(await r.text());
+    reply(ok);
+  }catch(e){ toast('Não foi possível executar a ação: '+e.message,true); reply({k:'denied',a:m.a}); }
+}
+setInterval(()=>{ if(S&&role==='host'&&P.autoDisc&&Date.now()-S.last>P.autoDiscMin*60000){ toast('Sessão encerrada por inatividade'); hangup(); } },15000);
+
+/* ---------- chat e avisos de acesso ---------- */
+const bc=('BroadcastChannel' in window)?new BroadcastChannel('velodesk-ui'):null;   // fala com as janelas flutuantes (overlay.html)
+const chat={log:[],unread:0,open:false,tab:''};
+let ovState={type:'state',live:false}, overlayHide;
+const shellHost=()=>role==='host'&&!!(sh&&sh.overlay);
+const chatWho=()=>role==='host'?(S?dname(S.from):''):(V?dname(V.to):'');
+const panel=VDPanel($('chatPanel'),{state:()=>({name:chatWho(),log:chat.log,unread:chat.unread,files:xfersView(),canFiles:canFiles(),tab:chat.tab,fm:canFm()?{...fm,canWrite:!!(V.perms&&V.perms.filewrite)}:null}),cmd:(c,a)=>panelCmd(c,a)});
+function pushOverlay(extra){
+  ovState={type:'state',live:role==='host'&&!!S,name:S?dname(S.from):(ovState.name||''),idFmt:S?fmt(S.from):(ovState.idFmt||''),how:S?S.how:(ovState.how||''),perms:S?S.perms:(ovState.perms||null),profiles:profiles().map(p=>({id:p.id,name:p.name})),profId:S?S.profId:'',custom:S?!!S.custom:false,since:startedAt||0,log:chat.log,unread:chat.unread,chat:chat.open,tab:chat.tab,files:xfersView(),canFiles:canFiles(),ended:null,...extra};
+  if(bc) bc.postMessage(ovState);
+}
+function chatChanged(){
+  const dot=!!chat.unread||xfers.some(x=>x.state==='offer'); $('chatDot').hidden=!dot; $('liveDot').hidden=!dot;
+  if(!shellHost()){ $('chatp').hidden=!chat.open; $('chatT').textContent='Chat com '+chatWho(); panel.render(); }
+  pushOverlay();
+}
+function toggleChat(force,tab){
+  chat.open=force===undefined?!chat.open:!!force; if(chat.open&&!tab) chat.unread=0; chat.tab=chat.open?(tab||''):'';
+  if(shellHost()) sh.overlay.session(chat.open);
+  chatChanged();
+}
+function chatSend(t){
+  t=String(t||'').trim().slice(0,1000); if(!t||!dc||dc.readyState!=='open') return;
+  dc.send(JSON.stringify({k:'chat',t})); chat.log.push({me:true,t,at:Date.now()}); chatChanged();
+}
+function chatGot(t){
+  if(typeof t!=='string'||!t.trim()) return;
+  chat.log.push({me:false,t:t.slice(0,1000),at:Date.now()}); if(chat.log.length>200) chat.log.shift();
+  if(role==='host'){ if(!chat.open) toggleChat(true); else chatChanged(); }
+  else { if(!chat.open){ chat.unread++; toast('Nova mensagem de '+chatWho()); } chatChanged(); }
+}
+function chatReset(){ xAbortAll(); chat.log=[]; chat.unread=0; chat.open=false; chat.tab=''; xfers=[]; if(sh&&sh.overlay) sh.overlay.session(false); $('chatp').hidden=true; $('chatDot').hidden=true; $('liveDot').hidden=true; }
+$('chatBtn').onclick=e=>{ e.stopPropagation(); toggleChat(); };
+$('fileBtn').onclick=e=>{ e.stopPropagation(); toggleChat(true,'files'); };
+$('chatX').onclick=()=>toggleChat(false);
+const cleanPerms=p=>Object.fromEntries(PERMS.map(([k])=>[k,!!(p&&p[k])]));
+function panelCmd(c,a){
+  if(c==='chat-send') return chatSend(a);
+  if(c==='chat-read'){ if(chat.unread){ chat.unread=0; chatChanged(); } return; }
+  if(c==='file-send') return sendFiles(a);
+  if(c.startsWith('fm-')) return fmCmd(c,a);
+  const x=xfers.find(x=>x.uid===a); if(!x) return;
+  if(c==='file-accept') acceptX(x); else if(c==='file-reject') rejectX(x); else if(c==='file-cancel') cancelX(x);
+  else if(c==='file-reveal') api('/api/file/reveal',{name:x.saved}).catch(()=>{});
+}
+if(bc) bc.onmessage=e=>{
+  const m=e.data||{};
+  if(m.type==='hello'){ bc.postMessage(ovState); if(invite) pushInvite(); }
+  else if(m.type==='cmd'){
+    if(m.cmd==='end') hangup(); else if(m.cmd==='chat-toggle') toggleChat(); else if(m.cmd==='chat-close') toggleChat(false);
+    else if(m.cmd==='chat-send') chatSend(m.t);
+    else if(m.cmd==='invite-accept'){ if(invite) invite.done({profId:m.arg.profId,perms:cleanPerms(m.arg.perms)}); }
+    else if(m.cmd==='invite-reject'){ if(invite) invite.done(null); }
+    else if(m.cmd==='perm-toggle') hostPerm(m.arg.key,m.arg.val);
+    else if(m.cmd==='prof-set') hostProfile(m.arg);
+    else if(m.cmd==='session-min'){ if(sh&&sh.overlay&&sh.overlay.min) sh.overlay.min(); }
+    else panelCmd(m.cmd,m.arg);
+  }
+};
+
+/* ---------- transferência de arquivos (canal 'files', criptografado pelo WebRTC) ---------- */
+let dcFile=null, xfers=[], xuid=0, xTimer;
+const XCH=16384, XBLOCK=262144;
+function sessNow(){ return role==='host'?S:V; }
+function canFiles(){ const x=sessNow(); return !!(x&&x.perms&&x.perms.files); }
+function xfersView(){ return xfers.map(x=>({uid:x.uid,dir:x.dir,name:x.name,size:x.size,done:x.done,state:x.state,err:x.err})); }
+function xNotify(){ if(xTimer) return; xTimer=setTimeout(()=>{ xTimer=null; chatChanged(); },120); }
+function sendF(o){ if(dcFile&&dcFile.readyState==='open') dcFile.send(JSON.stringify(o)); }
+function bindFiles(ch){ dcFile=ch; ch.binaryType='arraybuffer'; ch.onmessage=m=>fileMsg(m.data); }
+const fileLimit=()=>Math.max(1,Number(P.fileMaxMB)||2048)*1048576;
+function sendFiles(list,opt={}){
+  const s=sessNow(), ok=opt.dest?(s&&s.perms&&s.perms.filewrite):opt.print!==undefined?(s&&s.perms&&s.perms.print):canFiles();
+  if(!ok||!dcFile||dcFile.readyState!=='open'){ toast('Este recurso não está disponível nesta sessão',true); return; }
+  for(const f of list){
+    if(f.size>fileLimit()){ toast(f.name+' passa do limite de '+Math.round(fileLimit()/1048576)+' MB',true); continue; }
+    const x={uid:++xuid,dir:'out',name:f.name,size:f.size,done:0,state:'wait',file:f,dest:opt.dest,print:opt.print}; xfers.push(x);
+    sendF({t:'offer',o:1,id:x.uid,name:f.name,size:f.size,dest:opt.dest,print:opt.print});
+  }
+  chatChanged();
+}
+// o host envia um arquivo do disco dele (pedido pelo gerenciador de arquivos do controlador)
+async function sendHostFile(path,rq){
+  const r=await fetch('/api/fs/read?off=0&n=0&path='+encodeURIComponent(path),{headers:{'X-Agent-Token':agentTok}});
+  if(!r.ok) throw new Error((await r.text()).trim()||'Não foi possível abrir o arquivo');
+  const size=Number(r.headers.get('X-File-Size')||0), name=path.split(/[\\/]/).pop();
+  if(size>fileLimit()) throw new Error('Arquivo maior que o limite de '+Math.round(fileLimit()/1048576)+' MB');
+  const x={uid:++xuid,dir:'out',name,size,done:0,state:'wait',read:async(o,n)=>(await fetch('/api/fs/read?off='+o+'&n='+n+'&path='+encodeURIComponent(path),{headers:{'X-Agent-Token':agentTok}})).arrayBuffer()}; xfers.push(x);
+  sendF({t:'offer',o:1,id:x.uid,name,size,rq}); chatChanged();
+}
+async function fileMsg(d){
+  if(!sessNow()) return;
+  if(typeof d!=='string') return rxData(d);
+  let m; try{ m=JSON.parse(d); }catch{ return; }
+  if(m.t==='offer') return onFileOffer(m);
+  const x=m.o?xfers.find(x=>x.dir==='in'&&x.rid===m.id):xfers.find(x=>x.dir==='out'&&x.uid===m.id);
+  if(!x) return;
+  if(m.t==='accept'){ if(x.state==='wait') streamX(x); }
+  else if(m.t==='reject') xEnd(x,'rejected');
+  else if(m.t==='deny') xEnd(x,'error',m.why==='perm'?'O perfil do outro lado não permite isso':m.why==='size'?'Arquivo maior que o limite do outro lado':m.why==='type'?'Tipo de arquivo não permitido para impressão':'O outro lado não conseguiu salvar');
+  else if(m.t==='cancel') xEnd(x,'canceled');
+  else if(m.t==='end'&&x.dir==='in') finishRx(x);
+}
+function xEnd(x,state,err){
+  if(['done','error','canceled','rejected'].includes(x.state)) return;
+  const was=x.state; x.state=state; if(err) x.err=err;
+  if(x.dir==='in'&&x.tid&&was==='active') api('/api/file/end',{tid:x.tid,ok:false}).catch(()=>{});
+  xNotify();
+}
+function onFileOffer(m){
+  const deny=why=>sendF({t:'deny',o:0,id:m.id,why});
+  const s=sessNow(), perms=(s&&s.perms)||{};
+  const isPrint=m.print!==undefined&&m.print!==null, isDest=!!m.dest&&typeof m.dest==='string', isRq=fmReq.has(m.rq);
+  if(role!=='host'&&(isPrint||isDest)) return deny('perm');
+  if(isPrint?!perms.print:isDest?!perms.filewrite:isRq?!perms.filemgr:!perms.files) return deny('perm');
+  if(typeof m.name!=='string'||!(m.size>=0)||m.size>fileLimit()) return deny('size');
+  if(isPrint&&!/\.(pdf|txt|png|jpe?g|bmp|gif)$/i.test(m.name)) return deny('type');
+  const x={uid:++xuid,dir:'in',rid:m.id,name:m.name.slice(0,200),size:m.size,done:0,state:'offer',dest:isDest?m.dest:undefined,print:isPrint?String(m.print||'').slice(0,200):undefined}; xfers.push(x);
+  if(isRq||isDest) acceptX(x);                                                     // pedido explícito pelo gerenciador de arquivos
+  else if(role==='host'&&(P.auto||(S.via==='fixed'&&P.unattended))) acceptX(x);       // sem ninguém na frente da tela
+  else if(role==='host'){ toggleChat(true,'files'); if(sh&&sh.notify) sh.notify('Arquivo para aprovar',dname(S.from)+' quer enviar '+x.name); }
+  else { toast(chatWho()+' quer enviar '+x.name); toggleChat(true,'files'); }
+  xNotify();
+}
+async function acceptX(x){
+  if(x.state!=='offer') return;
+  try{ const r=x.dest?await apiT('/api/file/begin',{name:x.name,size:x.size,dir:x.dest}):await api('/api/file/begin',{name:x.name,size:x.size}); x.tid=r.tid; x.saved=r.name; x.state='active'; x.rx={buf:[],len:0,chain:Promise.resolve()}; sendF({t:'accept',o:0,id:x.rid}); }
+  catch(e){ x.state='error'; x.err=e.message; sendF({t:'deny',o:0,id:x.rid,why:'fail'}); }
+  xNotify();
+}
+function rejectX(x){ if(x.state!=='offer') return; x.state='rejected'; sendF({t:'reject',o:0,id:x.rid}); xNotify(); }
+function cancelX(x,err){
+  if(!['offer','wait','active'].includes(x.state)) return;
+  const was=x.state; x.state=err?'error':'canceled'; if(err) x.err=err;
+  if(x.dir==='out') sendF({t:'cancel',o:1,id:x.uid});
+  else { sendF({t:'cancel',o:0,id:x.rid}); if(was==='active'&&x.tid) api('/api/file/end',{tid:x.tid,ok:false}).catch(()=>{}); }
+  xNotify();
+}
+async function printX(x){ try{ await apiT('/api/print',{name:x.saved,printer:x.print}); if(sh&&sh.notify) sh.notify('Impressão enviada',x.name+' foi enviado para a impressora'); }catch(e){ x.state='error'; x.err='Não foi possível imprimir: '+e.message; xNotify(); } }
+function xAbortAll(){ for(const x of xfers) if(['offer','wait','active'].includes(x.state)) xEnd(x,'error','Sessão encerrada'); }
+function rxData(buf){
+  if(buf.byteLength<5) return;
+  const id=new DataView(buf).getUint32(0);
+  const x=xfers.find(x=>x.dir==='in'&&x.rid===id&&x.state==='active'); if(!x) return;
+  const chunk=buf.slice(4); x.done+=chunk.byteLength;
+  if(x.done>x.size) return cancelX(x,'Recebeu mais dados do que o combinado');
+  x.rx.buf.push(chunk); x.rx.len+=chunk.byteLength;
+  if(x.rx.len>=1048576) flushRx(x);
+  xNotify();
+}
+function flushRx(x){
+  if(!x.rx.len) return; const b=new Blob(x.rx.buf); x.rx.buf=[]; x.rx.len=0;
+  x.rx.chain=x.rx.chain.then(()=>fetch('/api/file/chunk?tid='+x.tid,{method:'POST',body:b})).then(r=>{ if(!r.ok) throw new Error('Não foi possível gravar no disco'); }).catch(e=>{ if(x.state==='active') cancelX(x,e.message); });
+}
+async function finishRx(x){
+  if(x.state!=='active') return; flushRx(x); await x.rx.chain; if(x.state!=='active') return;
+  try{ const r=await api('/api/file/end',{tid:x.tid,ok:x.done===x.size}); if(r.ok){ x.state='done'; x.saved=r.name; toast(x.print!==undefined?'Imprimindo: '+r.name:'Arquivo recebido: '+r.name); if(x.print!==undefined) printX(x); } else { x.state='error'; x.err='Arquivo incompleto'; } }
+  catch(e){ x.state='error'; x.err=e.message; }
+  xNotify();
+}
+async function streamX(x){
+  x.state='active'; xNotify(); const ch=dcFile; ch.bufferedAmountLowThreshold=262144; let off=0;
+  while(off<x.size&&x.state==='active'&&ch.readyState==='open'){
+    const block=new Uint8Array(await (x.read?x.read(off,XBLOCK):x.file.slice(off,off+XBLOCK).arrayBuffer()));
+    if(!block.length) break;
+    for(let i=0;i<block.length&&x.state==='active';i+=XCH){
+      if(ch.bufferedAmount>1048576) await new Promise(r=>{ ch.onbufferedamountlow=()=>{ ch.onbufferedamountlow=null; r(); }; });
+      if(ch.readyState!=='open') break;
+      const part=block.subarray(i,i+XCH), fr=new Uint8Array(4+part.length); new DataView(fr.buffer).setUint32(0,x.uid); fr.set(part,4); ch.send(fr);
+      x.done=off+i+part.length; xNotify();
+    }
+    off+=block.length;
+  }
+  if(x.state==='active'){ if(ch.readyState==='open'){ sendF({t:'end',o:1,id:x.uid}); x.state='done'; if(x.dest) setTimeout(()=>fmOpen(fm.path),900); } else { x.state='error'; x.err='Conexão encerrada'; } xNotify(); }
+}
+
+/* ---------- gerenciador de arquivos remoto ---------- */
+const fmWait=new Map(), fmReq=new Set(); let fmId=0;
+const fm={path:'',parent:'',entries:[],busy:false,err:'',loaded:false};
+const canFm=()=>role==='viewer'&&!!(V&&V.perms&&V.perms.filemgr);
+function fmCall(op,args={},id=++fmId){
+  return new Promise((res,rej)=>{
+    if(!dc||dc.readyState!=='open') return rej(new Error('Sessão indisponível'));
+    const t=setTimeout(()=>{ fmWait.delete(id); rej(new Error('O outro computador não respondeu')); },20000);
+    fmWait.set(id,{res:d=>{ clearTimeout(t); res(d); },rej:e=>{ clearTimeout(t); rej(e); }});
+    dc.send(JSON.stringify({k:'fm',id,op,...args}));
+  });
+}
+async function fmOpen(path){
+  if(!canFm()) return; fm.busy=true; fm.err=''; chatChanged();
+  try{ const d=await fmCall('list',{path}); fm.path=d.path; fm.parent=d.parent; fm.entries=d.entries||[]; fm.loaded=true; }
+  catch(e){ fm.err=e.message; fm.loaded=true; }
+  fm.busy=false; chatChanged();
+}
+async function fmDo(op,args,okMsg){ try{ await fmCall(op,args); if(okMsg) toast(okMsg); }catch(e){ toast(e.message,true); } fmOpen(fm.path); }
+function fmCmd(c,a){
+  if(c==='fm-open') return fmOpen(a);
+  if(c==='fm-up') return fmOpen(fm.parent||'');
+  if(c==='fm-refresh') return fmOpen(fm.path);
+  if(c==='fm-get'){ const id=++fmId; fmReq.add(id); fmCall('get',{path:a},id).then(()=>toast('Baixando…')).catch(e=>{ fmReq.delete(id); toast(e.message,true); }); return; }
+  if(c==='fm-upload') return sendFiles(a,{dest:fm.path});
+  if(c==='fm-mkdir') return ask('Nova pasta','Em '+fm.path,'Criar','','Cancelar',{max:100}).then(ok=>{ if(ok&&$('mi').value.trim()) fmDo('mkdir',{path:fm.path,name:$('mi').value.trim()},'Pasta criada'); });
+  if(c==='fm-rename'){ const e=fm.entries.find(x=>x.p===a); return ask('Renomear',a,'Renomear',e?e.n:'','Cancelar',{max:120}).then(ok=>{ if(ok&&$('mi').value.trim()) fmDo('rename',{path:a,name:$('mi').value.trim()},'Renomeado'); }); }
+  if(c==='fm-delete') return ask('Excluir no computador remoto?',a+'\n\nIsso apaga de verdade (não vai para a lixeira).','Excluir',null,'Cancelar').then(ok=>{ if(ok) fmDo('delete',{path:a},'Excluído'); });
+}
+async function hostFm(m){
+  const reply=o=>{ if(dc&&dc.readyState==='open') dc.send(JSON.stringify({k:'fm',id:m.id,...o})); };
+  const need=['mkdir','rename','delete'].includes(m.op)?'filewrite':m.op==='printers'?'print':'filemgr';
+  if(!S.perms[need]) return reply({ok:false,err:'O perfil desta sessão não permite isso'});
+  S.last=Date.now();
+  try{
+    if(m.op==='list') reply({ok:true,data:await apiT('/api/fs/list',{path:String(m.path||'')})});
+    else if(m.op==='mkdir'){ await apiT('/api/fs/mkdir',{path:String(m.path),name:String(m.name)}); reply({ok:true}); }
+    else if(m.op==='rename'){ await apiT('/api/fs/rename',{path:String(m.path),name:String(m.name)}); reply({ok:true}); }
+    else if(m.op==='delete'){ await apiT('/api/fs/delete',{path:String(m.path)}); reply({ok:true}); }
+    else if(m.op==='printers') reply({ok:true,data:await apiT('/api/printers',{})});
+    else if(m.op==='get'){ await sendHostFile(String(m.path),m.id); reply({ok:true}); }
+    else reply({ok:false,err:'Operação desconhecida'});
+  }catch(e){ reply({ok:false,err:e.message}); }
+}
+
+/* ---------- túneis TCP ---------- */
+let tuns=[], tunCtl=null;
+function pipe(ch,w){                                   // liga um canal WebRTC a um WebSocket local, nos dois sentidos
+  const openC=new Promise(r=>{ ch.readyState==='open'?r():(ch.onopen=r); }), openW=new Promise(r=>{ w.readyState===1?r():(w.onopen=r); });
+  let toCh=Promise.resolve(), toW=Promise.resolve();
+  const closeAll=()=>{ try{ ch.close(); }catch{} try{ w.close(); }catch{} };
+  w.onmessage=e=>{ const b=new Uint8Array(e.data); toCh=toCh.then(()=>openC).then(async()=>{ for(let i=0;i<b.length;i+=16384){ while(ch.readyState==='open'&&ch.bufferedAmount>4e6) await sleep(10); if(ch.readyState!=='open') return; ch.send(b.subarray(i,i+16384)); } }); };
+  ch.onmessage=e=>{ toW=toW.then(()=>openW).then(()=>{ if(w.readyState===1) w.send(e.data); }); };
+  ch.onclose=closeAll; w.onclose=closeAll; w.onerror=closeAll;
+}
+function tunCtlOpen(){
+  if(tunCtl&&tunCtl.readyState<=1) return;
+  tunCtl=new WebSocket(wsBase()+'/tunnel/ctl?t='+encodeURIComponent(agentTok));
+  tunCtl.onmessage=e=>{ let m; try{ m=JSON.parse(e.data); }catch{ return; } if(m.t!=='conn') return;
+    const t=tuns.find(x=>x.lport===m.port); if(!t||!pc||role!=='viewer') return;
+    const ch=pc.createDataChannel(`tun:${m.cid}:${t.host}:${t.port}`); ch.binaryType='arraybuffer';
+    const w=new WebSocket(wsBase()+'/tunnel/data?cid='+m.cid+'&t='+encodeURIComponent(agentTok)); w.binaryType='arraybuffer'; pipe(ch,w); };
+}
+const hostTuns=new Set();
+function hostChannel(ch){                              // canais abertos pelo controlador (túneis)
+  const mt=/^tun:([0-9a-f]+):(.+):(\d+)$/.exec(ch.label); if(!mt) return;
+  if(!S||!S.perms.tunnels){ ch.close(); return; }
+  hostTuns.add(ch); ch.addEventListener('close',()=>hostTuns.delete(ch));
+  ch.binaryType='arraybuffer';
+  const w=new WebSocket(wsBase()+'/tunnel/dial?host='+encodeURIComponent(mt[2])+'&port='+mt[3]+'&t='+encodeURIComponent(agentTok)); w.binaryType='arraybuffer'; pipe(ch,w);
+}
+function renderTuns(){
+  $('tunList').innerHTML=tuns.length?tuns.map((t,i)=>`<div class="rec-item"><span class="t"><b>127.0.0.1:${t.lport} → ${esc(t.host)}:${t.port}</b><span class="sub">Aberto enquanto a sessão durar</span></span><button class="ghost sm" data-i="${i}">Remover</button></div>`).join(''):'<div class="sub" style="padding:6px 0">Nenhum túnel aberto.</div>';
+  $('tunList').querySelectorAll('button').forEach(b=>b.onclick=async()=>{ const t=tuns[b.dataset.i]; try{ await apiT('/api/tunnel/close',{port:t.lport}); }catch{} tuns.splice(b.dataset.i,1); renderTuns(); });
+}
+$('tunAdd').onclick=async()=>{
+  const lport=Number($('tunL').value), host=($('tunH').value.trim()||'127.0.0.1'), port=Number($('tunP').value);
+  if(!(lport>=1024&&lport<=65535)) return toast('Porta local: use um número de 1024 a 65535',true);
+  if(!(port>=1&&port<=65535)) return toast('Informe a porta de destino',true);
+  if(!V||!V.perms||!V.perms.tunnels) return toast('O perfil desta sessão não permite túneis TCP',true);
+  try{ await apiT('/api/tunnel/listen',{port:lport}); tunCtlOpen(); tuns.push({lport,host,port}); renderTuns(); toast('Túnel aberto em 127.0.0.1:'+lport); $('tunL').value=$('tunP').value=''; }
+  catch(e){ toast(e.message,true); }
+};
+$('tunX').onclick=()=>$('tundlg').classList.remove('show');
+function closeTuns(){ if(tuns.length){ apiT('/api/tunnel/closeall').catch(()=>{}); tuns=[]; } if(tunCtl){ try{ tunCtl.close(); }catch{} tunCtl=null; } }
+
+/* ---------- impressão remota ---------- */
+async function openPrint(){
+  $('prnSel').innerHTML='<option value="">Impressora padrão</option>'; $('prnFile').value=''; $('prndlg').classList.add('show');
+  try{ const d=await fmCall('printers'); for(const p of d.printers||[]) $('prnSel').insertAdjacentHTML('beforeend',`<option value="${esc(p)}">${esc(p)}</option>`); }catch(e){ toast('Não foi possível listar as impressoras: '+e.message,true); }
+}
+$('prnX').onclick=()=>$('prndlg').classList.remove('show');
+$('prnOk').onclick=()=>{
+  const f=$('prnFile').files[0]; if(!f) return toast('Escolha um documento',true);
+  if(!/\.(pdf|txt|png|jpe?g|bmp|gif)$/i.test(f.name)) return toast('Só PDF, TXT e imagens podem ser impressos',true);
+  sendFiles([f],{print:$('prnSel').value}); $('prndlg').classList.remove('show'); toast('Documento enviado: o outro computador precisa aceitar para imprimir');
+};
+
+/* ---------- aceite de convite (janela própria, sempre visível) ---------- */
+let invite=null;
+function pushInvite(){ if(bc&&invite) bc.postMessage({type:'invite',inv:{from:invite.from,name:invite.name,idFmt:invite.idFmt,how:invite.how,tfa:invite.tfa,profiles:invite.profiles,profId:invite.profId,perms:invite.perms}}); }
+function askInvite(o){
+  const name=dname(o.from);
+  if(!(sh&&sh.overlay&&sh.overlay.invite)){          // sem a casca desktop: caixa de diálogo simples
+    return ask('Pedido de conexão',name+(devices[o.from]&&devices[o.from].name?' ('+fmt(o.from)+')':'')+' quer ver e controlar a tela deste computador.','Aceitar',null,'Recusar',{profiles:true,profile:o.profId}).then(ok=>ok?{profId:$('mprof').value,perms:null}:null);
+  }
+  return new Promise(res=>{
+    const prof=profById(o.profId), t=setTimeout(()=>invite&&invite.done(null),90000);
+    invite={from:o.from,name,idFmt:fmt(o.from),how:o.how,tfa:o.tfa,profiles:profiles().map(p=>({id:p.id,name:p.name,perms:cleanPerms(p.perms)})),profId:prof.id,perms:cleanPerms(prof.perms),
+      done:r=>{ clearTimeout(t); invite=null; sh.overlay.invite(false); res(r); }};
+    sh.overlay.invite(true); pushInvite(); if(sh.notify) sh.notify('Pedido de conexão',name+' quer acessar este computador');
+  });
+}
+// Permissões ao vivo (janela da sessão do host): valem na hora e o controlador é avisado
+function hostPermsChanged(){
+  if(!S) return;
+  if(dc&&dc.readyState==='open') dc.send(JSON.stringify({k:'perms',perms:S.perms}));
+  if(!S.perms.tunnels) for(const ch of hostTuns){ try{ ch.close(); }catch{} }
+  chatChanged();
+}
+function hostPerm(key,val){ if(!S||!PERMS.some(p=>p[0]===key)) return; S.perms[key]=!!val; S.custom=true; S.profName=profById(S.profId).name+' (ajustado)'; hostPermsChanged(); }
+function hostProfile(id){ if(!S) return; const p=profiles().find(x=>x.id===id); if(!p) return; S.perms=cleanPerms(p.perms); S.profId=p.id; S.custom=false; S.profName=p.name; hostPermsChanged(); }
+const hasOv=()=>!!(sh&&sh.overlay);
+// Aviso permanente no computador controlado: faixa no app + faixa flutuante sempre visível + notificação do sistema.
+function hostLive(on,info){
+  clearTimeout(overlayHide);
+  if(on){
+    const n=dname(info); $('live').hidden=hasOv(); $('live').classList.remove('ended'); $('liveTxt').textContent=n+' está acessando este computador'; $('liveBtns').hidden=false;
+    if(shellHost()){ sh.overlay.mark(true); toggleChat(true); if(sh.notify) sh.notify('Acesso remoto iniciado',n+' está acessando este computador'); }
+    pushOverlay(); return;
+  }
+  if(!info){ $('live').hidden=true; return; }
+  $('live').hidden=hasOv(); $('live').classList.add('ended'); $('liveTxt').textContent=info.name+' não está mais acessando este computador'; $('liveBtns').hidden=true;
+  setTimeout(()=>{ if(!S) $('live').hidden=true; },9000);
+  if(sh&&sh.overlay){
+    pushOverlay({ended:{name:info.name,dur:info.dur}});
+    if(sh.notify) sh.notify('Acesso remoto encerrado',info.name+' não está mais acessando este computador');
+    overlayHide=setTimeout(()=>sh.overlay.mark(false),9000);
+  }
+}
+
+/* ---------- sinalização ---------- */
+const REJ={bad_password:'Senha incorreta',bad_code:'Código de verificação incorreto',denied:'Conexão recusada pelo computador remoto',busy:'Computador remoto ocupado',locked:'Muitas tentativas. Aguarde 1 minuto',no_control:'Este computador ainda não aceita controle remoto',not_allowed:'Seu ID não está autorizado neste computador',old_version:'O outro computador usa uma versão antiga do VeloDesk',timeout:'Tempo esgotado'};
+async function onSignal(from,d){
+  if(d.kind==='connect-request') return onRequest(from,d);
+  if(d.kind==='wake') return onWake(from,d);
+  const w=waiters[d.kind]; if(w&&w.from===from) return w.res(d);
+  if(from!==peerId||!pc) return;
+  if(d.kind==='challenge'&&V) return onChallenge(d);
+  if(d.kind==='need-code'&&V) return onNeedCode();
+  if(d.kind==='offer'&&V) return onOffer(d);
+  if(d.kind==='answer') return onAnswer(d);
+  if(d.kind==='ice') return gotIce(d.c);
+  if(d.kind==='reject'){
+    if(d.why==='bad_password'&&V&&V.tok&&!V.pw) tokDel(V.to);          // token recusado: apaga o acesso salvo
+    rc=null; cleanup(); toast(REJ[d.why]||'Recusado',true);
+  }
+  else if(d.kind==='bye'){ rc=null; cleanup(); toast('O outro computador encerrou a sessão'); }
+}
+
+/* ---------- configurações ---------- */
+function setStatus(text,ok){
+  stat.text=ok?'Online':text; stat.ok=!!ok;
+  $('st').textContent=ok?'Pronto para se conectar':text; $('dot').classList.toggle('on',!!ok); $('hdot').classList.toggle('on',!!ok);
+  if(role!=='host') $('hst').textContent=stat.text;
+}
+async function refreshCore(){
+  try{ const c=await api('/api/config'); $('grpServer').hidden=!!c.locked; $('cfgServer').value=(c.server||'').replace(/^wss?:\/\//,'').replace(/\/ws$/,''); $('cfgInsecure').checked=!!c.insecure; showFixed(c.hasPassword); RT.tfa=!!c.hasTFA; }catch{}
+  try{ RT.tokN=(await api('/api/token')).n; }catch{}
+  $('tokBtn').textContent='Excluir dados de acesso salvos'+(RT.tokN?` (${RT.tokN})`:''); $('tokBtn').disabled=!RT.tokN;
+  $('tfaBtn').textContent=RT.tfa?'Desativar':'Ativar'; $('tfaBtn').className=RT.tfa?'ghost sm':'sm';
+  $('tfaSt').textContent=RT.tfa?'Ativa: um código do app autenticador é exigido.':'Desativada. Recomendado para quem usa senha fixa.';
+  try{ $('recDir').value=(await api('/api/rec/dir')).dir; $('fileDir').value=(await api('/api/file/dir')).dir; }catch{}
+  applyPrefs();
+}
+let pendingTab=null;
+const openCfg=tab=>{ pendingTab=tab||null; showView('settings'); };
+async function enterSettings(){
+  $('aboutId').textContent=myId?fmt(myId):'—'; $('rememberRow').hidden=!hasSecrets();
+  showTab(pendingTab||document.querySelector('.tab.on').dataset.tab); pendingTab=null;
+  await refreshCore(); renderUpd();
+}
+function showTab(t){ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t)); document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='pane-'+t)); }
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+async function saveServer(){
+  try{ await api('/api/config',{server:$('cfgServer').value,insecure:$('cfgInsecure').checked}); toast('Conexão atualizada'); if(ws) ws.close(); }
+  catch(e){ toast(e.message||'Endereço inválido',true); }
+}
+$('cfgServer').addEventListener('change',saveServer); $('cfgInsecure').addEventListener('change',saveServer);
+
+// senha fixa (acesso sem supervisão)
+function showFixed(has){ RT.fixed=!!has; $('fpwSt').textContent=has?'Senha definida (guardada só como hash neste computador).':'Nenhuma senha definida.'; $('pwDel').disabled=!has; $('pwSet').textContent=has?'Alterar senha':'Configurar senha'; }
+document.querySelectorAll('[data-eye]').forEach(b=>b.onclick=()=>{ const i=$(b.dataset.eye); i.type=i.type==='password'?'text':'password'; });
+$('pwSet').onclick=()=>{ $('pw1').value=''; $('pw2').value=''; $('pw1').type=$('pw2').type='password'; $('pwdlg').classList.add('show'); setTimeout(()=>$('pw1').focus(),40); };
+$('pwCancel').onclick=()=>$('pwdlg').classList.remove('show');
+$('pwOk').onclick=async()=>{
+  const a=$('pw1').value, b=$('pw2').value;
+  if(a!==b) return toast('As senhas não coincidem',true);
+  try{ showFixed((await api('/api/password',{password:a})).hasPassword); $('pwdlg').classList.remove('show'); toast('Senha definida'); }
+  catch(e){ toast(e.message,true); }
+};
+$('pwDel').onclick=async()=>{ if(!await ask('Remover a senha fixa?','O acesso sem supervisão deixa de funcionar e os dados de acesso salvos continuam válidos até serem excluídos.','Remover',null,'Cancelar')) return;
+  try{ showFixed((await api('/api/password',{password:''})).hasPassword); toast('Senha removida'); }catch(e){ toast(e.message,true); } };
+$('tokBtn').onclick=async()=>{ if(!await ask('Excluir dados de acesso salvos?','Os computadores que salvaram o acesso voltarão a pedir a senha.','Excluir',null,'Cancelar')) return;
+  try{ await api('/api/token',{}); toast('Dados de acesso excluídos'); refreshCore(); }catch(e){ toast(e.message,true); } };
+
+// 2FA
+$('tfaBtn').onclick=async()=>{
+  if(RT.tfa){
+    if(!await ask('Desativar a autenticação de dois fatores','Digite um código atual do app autenticador para confirmar.','Desativar','','Cancelar',{numeric:true,max:7})) return;
+    try{ const r=await api('/api/2fa/disable',{code:$('mi').value}); if(!r.ok) return toast('Código incorreto',true); toast('2FA desativada'); }catch(e){ return toast(e.message,true); }
+    return refreshCore();
+  }
+  try{ const s=await api('/api/2fa/setup',{}); $('tfaKey').textContent=s.secret.replace(/(.{4})/g,'$1 ').trim(); $('tfaQr').src='/api/2fa/qr?t='+Date.now(); $('tfaCode').value=''; $('tfadlg').classList.add('show'); setTimeout(()=>$('tfaCode').focus(),40); }
+  catch(e){ toast(e.message,true); }
+};
+$('tfaCancel').onclick=()=>$('tfadlg').classList.remove('show');
+$('tfaOk').onclick=async()=>{
+  try{ const r=await api('/api/2fa/enable',{code:$('tfaCode').value}); if(!r.ok) return toast('Código incorreto. Confira a hora do celular e tente de novo',true);
+    $('tfadlg').classList.remove('show'); toast('Autenticação de dois fatores ativada'); refreshCore(); }
+  catch(e){ toast(e.message,true); }
+};
+$('tfaCode').addEventListener('keydown',e=>e.key==='Enter'&&$('tfaOk').click());
+
+// gravação: pasta
+$('recDir').addEventListener('change',async()=>{
+  try{ const r=await api('/api/rec/dir',{dir:$('recDir').value}); setPref('recDir',r.dir); $('recDir').value=r.dir||(await api('/api/rec/dir')).dir; toast('Pasta de gravações atualizada'); }
+  catch(e){ toast(e.message,true); $('recDir').value=P.recDir; }
+});
+$('fileDir').addEventListener('change',async()=>{
+  try{ const r=await api('/api/file/dir',{dir:$('fileDir').value}); setPref('fileDir',r.dir); $('fileDir').value=r.dir||(await api('/api/file/dir')).dir; toast('Pasta de arquivos recebidos atualizada'); }
+  catch(e){ toast(e.message,true); $('fileDir').value=P.fileDir; }
+});
+$('filePick').onclick=async()=>{ const d=await sh.pickFolder(); if(d){ $('fileDir').value=d; $('fileDir').dispatchEvent(new Event('change')); } };
+$('recPick').onclick=async()=>{ const d=await sh.pickFolder(); if(d){ $('recDir').value=d; $('recDir').dispatchEvent(new Event('change')); } };
+
+// casca desktop
+async function loadShellPrefs(){
+  if(!sh||!sh.getShellPrefs) return;
+  document.querySelectorAll('.only-shell').forEach(e=>e.style.display='flex'); $('recPick').hidden=$('filePick').hidden=!sh.pickFolder;
+  const p=await sh.getShellPrefs(); $('shAuto').checked=!!p.autostart; $('shTray').checked=!!p.closeToTray;
+}
+async function saveShell(){
+  const r=await sh.setShellPrefs({autostart:$('shAuto').checked,closeToTray:$('shTray').checked});
+  if(r&&r.error){ toast(r.error,true); loadShellPrefs(); }
+}
+$('shAuto').onchange=saveShell; $('shTray').onchange=saveShell;
+$('quitBtn').onclick=async()=>{ if(await ask('Sair do VeloDesk?','Este computador deixará de ficar acessível até você abrir o app de novo.','Sair',null,'Cancelar')) sh.quit(); };
+if(sh&&sh.win){
+  $('wbar').classList.add('shell');
+  $('wMin').onclick=()=>sh.win.minimize(); $('wMax').onclick=()=>sh.win.toggleMaximize(); $('wClose').onclick=()=>sh.win.close();
+  $('wbar').addEventListener('dblclick',e=>{ if(!e.target.closest('button')) sh.win.toggleMaximize(); });
+} else document.querySelector('.stage').classList.add('nobar');
+
+let wsErr='';
+function open(){
+  wsErr=''; setStatus('Conectando…',false);
+  ws=new WebSocket(SERVER);
+  ws.onopen=()=>ws.send(JSON.stringify({t:'hello'}));
+  ws.onmessage=e=>{
+    const m=JSON.parse(e.data);
+    if(m.t==='welcome'){ myId=m.id; $('myid').textContent=fmt(myId); setStatus('Online',true); refreshPresence(); }
+    else if(m.t==='presence'){ online=new Set(m.on||[]); presenceOk=true; renderDevices(); }
+    else if(m.t==='error'){
+      if(m.msg==='no_server'){ wsErr='Configure o servidor'; if(!$('view-settings').classList.contains('on')) openCfg('net'); }
+      else if(m.msg==='server_unreachable') wsErr='Servidor inacessível';
+      else { cleanup(); toast('Computador offline',true); }
+    }
+    else if(m.t==='signal') onSignal(m.from,m.data);
+  };
+  ws.onclose=()=>{ setStatus(wsErr||'Reconectando…',false); if(wsErr) $('myid').textContent='··· ··· ···'; setTimeout(open,wsErr==='Configure o servidor'?1500:3000); };
+}
+setInterval(pollUpdate,20000); setTimeout(pollUpdate,2500); setInterval(refreshPresence,15000); setInterval(pollFound,4000); setTimeout(pollFound,1500);
+loadPrefs(); newPw(); renderDevices(); connectAgent(); loadShellPrefs(); loadSaved(); refreshCore(); open();
+</script>
+</body>
+</html>
